@@ -1,0 +1,32 @@
+/**
+ * DropSites Design Tokens
+ *
+ * Semantic token layer. Components must reference these variables — never
+ * hardcoded hex values or Tailwind primitive colour classes.
+ *
+ * Import order: primitives.css → tokens.css → globals.css
+ */
+
+:root {
+  /* ── Accent (orange-500) ─────────────────────────────────────── */
+  --color-accent:          #f97316;
+  --color-accent-hover:    #ea580c;
+  --color-accent-subtle:   oklch(0.98 0.02 60);   /* very light orange tint */
+  --color-accent-muted:    oklch(0.94 0.04 60);   /* drag-over background */
+
+  /* ── Success (green) ─────────────────────────────────────────── */
+  --color-success:         oklch(0.55 0.18 145);  /* ~green-600 */
+  --color-success-subtle:  oklch(0.96 0.05 145);  /* ~green-50 */
+  --color-success-muted:   oklch(0.92 0.08 145);  /* ~green-100 */
+}
+
+.dark {
+  --color-accent:          #f97316;
+  --color-accent-hover:    #ea580c;
+  --color-accent-subtle:   oklch(0.25 0.04 60);
+  --color-accent-muted:    oklch(0.28 0.06 60);
+
+  --color-success:         oklch(0.72 0.18 145);
+  --color-success-subtle:  oklch(0.22 0.05 145);
+  --color-success-muted:   oklch(0.26 0.08 145);
+}

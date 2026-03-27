@@ -33,7 +33,7 @@ depends_on:
 - [x] **S06** — Slug generation + validation + reserved words — 2026-03-27
 - [x] **S07** — Upload API route + processing pipeline — 2026-03-27
 - [x] **S08** — Serving middleware (slug resolve, R2 fetch, MIME headers, 404) — 2026-03-27
-- [ ] **S09** — Upload UI (drag-drop zone, progress bar, success screen, slug input)
+- [x] **S09** — Upload UI (drag-drop zone, progress bar, success screen, slug input) — 2026-03-27
 
 ### M1.3 — Limits
 - [ ] **S10** — Limit profile system (DB, getProfile, assignProfile, pre-upload checks)

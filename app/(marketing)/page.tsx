@@ -1,4 +1,5 @@
 import UseCaseTabs from "@/components/marketing/UseCaseTabs";
+import { UploadZone } from "@/components/upload/upload-zone";
 
 const CheckIcon = ({ size = 10 }: { size?: number }) => (
   <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: size, height: size }}>
@@ -54,11 +55,14 @@ export default function Home() {
           Drop any static file — HTML, ZIP, JS, PDF — and get a permanent, shareable link in
           seconds. Built for AI-generated deliverables, client work, and everything in between.
         </p>
+        <div className="fade-up-3 flex justify-center w-full">
+          <UploadZone
+            baseUrl={process.env.NEXT_PUBLIC_APP_URL ?? "https://dropsites.app"}
+            showSlugInput
+          />
+        </div>
         <div className="ds-hero-ctas fade-up-3">
-          <a href="/signup" className="btn btn-primary-lg">
-            Start free — no card needed
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
-          </a>
+          <a href="/signup" className="btn btn-ghost-lg">Sign up for full access</a>
           <a href="#enterprise" className="btn btn-ghost-lg">Book an enterprise demo</a>
         </div>
         <div className="ds-hero-note fade-up-3">
