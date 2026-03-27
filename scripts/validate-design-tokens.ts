@@ -32,6 +32,7 @@ const SKIP_PATTERNS = [
   "globals.css", // root CSS file defines tokens — allowed to use primitives
   "primitives.css",
   "tokens.css",
+  "components/ui/", // shadcn/ui generated files — do not hand-edit, exempt from token checks
   "components/marketing/", // marketing page predates token system — will be migrated
   "app/(marketing)/page.tsx", // marketing landing page — will be migrated to token system
 ];

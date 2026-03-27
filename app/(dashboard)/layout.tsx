@@ -1,0 +1,52 @@
+import { redirect } from 'next/navigation'
+import type { ReactNode } from 'react'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { AppSidebar } from '@/components/layout/app-sidebar'
+import { TopNav } from '@/components/layout/top-nav'
+import { VerifyEmailBanner } from '@/components/auth/verify-email-banner'
+import type { WorkspaceRow } from '@/lib/auth/types'
+
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  // Fetch workspaces the user belongs to
+  const admin = createAdminClient()
+  const { data: memberships } = await admin
+    .from('workspace_members')
+    .select('workspace_id, role')
+    .eq('user_id', user.id)
+
+  const workspaceIds = (memberships ?? []).map((m) => m.workspace_id)
+
+  let workspaces: WorkspaceRow[] = []
+  if (workspaceIds.length > 0) {
+    const { data } = await admin
+      .from('workspaces')
+      .select('id, name, namespace_slug, is_personal, limit_profile, owner_id, created_at, updated_at')
+      .in('id', workspaceIds)
+      .is('deleted_at', null)
+      .order('is_personal', { ascending: false })
+    workspaces = (data ?? []) as WorkspaceRow[]
+  }
+
+  const isEmailUnverified = !user.email_confirmed_at
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      <AppSidebar user={user} workspaces={workspaces} />
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <TopNav user={user} workspaces={workspaces} />
+        {isEmailUnverified && <VerifyEmailBanner />}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}
