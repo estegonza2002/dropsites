@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en" style="color-scheme:light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>DropSites — UI Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── PRIMITIVE TOKENS ─────────────────────────────────────────── */
+:root {
+  --primitive-white:      #fafaf8;
+  --primitive-zinc-50:    #fafafa;
+  --primitive-zinc-100:   #f4f4f5;
+  --primitive-zinc-200:   #e4e4e7;
+  --primitive-zinc-300:   #d4d4d8;
+  --primitive-zinc-400:   #a1a1aa;
+  --primitive-zinc-500:   #71717a;
+  --primitive-zinc-600:   #52525b;
+  --primitive-zinc-700:   #3f3f46;
+  --primitive-zinc-800:   #27272a;
+  --primitive-zinc-900:   #18181b;
+  --primitive-zinc-950:   #0a0a0a;
+  --primitive-orange-400: #fb923c;
+  --primitive-orange-500: #f97316;
+  --primitive-orange-600: #ea580c;
+  --primitive-green-600:  #16a34a;
+  --primitive-amber-600:  #d97706;
+  --primitive-red-600:    #dc2626;
+  --primitive-violet-600: #7c3aed;
+  --primitive-blue-600:   #2563eb;
+}
+/* ── SEMANTIC TOKENS ──────────────────────────────────────────── */
+:root {
+  --color-bg-primary:      var(--primitive-white);
+  --color-bg-secondary:    var(--primitive-zinc-50);
+  --color-bg-tertiary:     var(--primitive-zinc-100);
+  --color-surface:         var(--primitive-white);
+  --color-text-primary:    var(--primitive-zinc-950);
+  --color-text-secondary:  var(--primitive-zinc-600);
+  --color-text-muted:      var(--primitive-zinc-400);
+  --color-text-inverse:    var(--primitive-white);
+  --color-border-default:  var(--primitive-zinc-200);
+  --color-border-strong:   var(--primitive-zinc-300);
+  --color-border-subtle:   var(--primitive-zinc-100);
+  --color-accent:          var(--primitive-orange-500);
+  --color-accent-hover:    var(--primitive-orange-600);
+  --color-accent-subtle:   #fff7ed;
+  --color-status-live:     var(--primitive-green-600);
+  --color-status-live-bg:  #dcfce7;
+  --color-status-warn:     var(--primitive-amber-600);
+  --color-status-warn-bg:  #fef3c7;
+  --color-status-error:    var(--primitive-red-600);
+  --color-status-error-bg: #fee2e2;
+  --color-status-paused:   var(--primitive-violet-600);
+  --color-status-paused-bg:#ede9fe;
+  --color-status-locked:   var(--primitive-zinc-600);
+  --color-status-locked-bg:var(--primitive-zinc-100);
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --sidebar-w: 220px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{background:#0e0e0e;font-family:var(--font-sans);-webkit-font-smoothing:antialiased;}
+
+/* ── OUTER STAGE ──────────────────────────────────────────────── */
+.stage {
+  min-height: 100vh;
+  padding: 28px 20px 56px;
+  background: #0e0e0e;
+}
+.stage-hd {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.stage-hd h1 {
+  font-size: 12px;
+  font-weight: 500;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 4px;
+}
+.stage-hd p { font-size: 11px; color: #2e2e2e; }
+
+/* ── VIEW TOGGLE ──────────────────────────────────────────────── */
+.view-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+.vtab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #222;
+  background: transparent;
+  color: #444;
+  transition: all .15s;
+  font-family: var(--font-sans);
+}
+.vtab svg { width: 13px; height: 13px; }
+.vtab:hover { color: #888; border-color: #3a3a3a; }
+.vtab.active { background: #1a1a1a; border-color: #555; color: #fff; }
+
+/* ── SCREEN TABS ──────────────────────────────────────────────── */
+.screen-tabs {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.stab {
+  padding: 5px 13px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #222;
+  background: transparent;
+  color: #3a3a3a;
+  transition: all .15s;
+  font-family: var(--font-sans);
+}
+.stab:hover { color: #666; border-color: #333; }
+.stab.active { background: #161616; border-color: #3a3a3a; color: #aaa; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE PHONE FRAME
+═══════════════════════════════════════════════════════════════ */
+.phone-wrap { display: flex; justify-content: center; }
+.phone {
+  width: 100%;
+  max-width: 393px;
+  background: #1c1c1e;
+  border-radius: 50px;
+  padding: 12px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 40px 80px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.phone-screen {
+  border-radius: 40px;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+  height: 780px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.status-bar {
+  height: 48px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 24px 8px;
+  background: var(--color-bg-primary);
+  flex-shrink: 0;
+}
+.status-time { font-size: 15px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -.02em; }
+.status-icons { display: flex; gap: 5px; align-items: center; color: var(--color-text-primary); }
+.status-icons svg { width: 14px; height: 14px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP BROWSER FRAME
+═══════════════════════════════════════════════════════════════ */
+.browser-wrap {
+  display: none;
+  justify-content: center;
+}
+.browser {
+  width: 100%;
+  max-width: 1080px;
+  background: #2a2a2a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 40px 100px rgba(0,0,0,.8);
+}
+.browser-chrome {
+  height: 42px;
+  background: #222;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid #333;
+}
+.browser-dots { display: flex; gap: 6px; }
+.browser-dot { width: 11px; height: 11px; border-radius: 50%; }
+.browser-url {
+  flex: 1;
+  max-width: 400px;
+  margin: 0 auto;
+  background: #2e2e2e;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 6px;
+}
+.browser-url-text {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #888;
+}
+.browser-lock { color: #555; }
+.browser-lock svg { width: 10px; height: 10px; }
+.browser-body {
+  height: 620px;
+  overflow: hidden;
+  position: relative;
+  background: var(--color-bg-primary);
+  display: flex;
+}
+
+/* ── SHARED COMPONENT STYLES ──────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.b-live   { color: var(--color-status-live);   background: var(--color-status-live-bg); }
+.b-locked { color: var(--color-status-locked); background: var(--color-status-locked-bg); }
+.b-warn   { color: var(--color-status-warn);   background: var(--color-status-warn-bg); }
+.b-error  { color: var(--color-status-error);  background: var(--color-status-error-bg); }
+.b-paused { color: var(--color-status-paused); background: var(--color-status-paused-bg); }
+
+/* ─────────────────────────────────────────────────────────────
+   DESKTOP LAYOUT
+───────────────────────────────────────────────────────────── */
+.d-sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+}
+.d-sidebar-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.d-logo {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  letter-spacing: -.03em;
+  margin-bottom: 12px;
+}
+.d-logo span { color: var(--color-accent); }
+
+.ws-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color .1s;
+}
+.ws-pill:hover { border-color: var(--color-border-strong); }
+.ws-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent); flex-shrink: 0; }
+.ws-pill-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-pill-badge { font-size: 9px; font-weight: 500; color: var(--color-accent); background: var(--color-accent-subtle); padding: 1px 6px; border-radius: 20px; font-family: var(--font-mono); flex-shrink: 0; }
+.ws-pill svg { width: 10px; height: 10px; color: var(--color-text-muted); flex-shrink: 0; }
+
+.d-nav { padding: 12px 8px; flex: 1; }
+.d-nav-section {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--color-text-muted);
+  padding: 10px 8px 4px;
+}
+.d-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background .1s, color .1s;
+  border-left: 2px solid transparent;
+  color: var(--color-text-secondary);
+}
+.d-nav-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+.d-nav-item:hover { background: var(--color-bg-tertiary); color: var(--color-text-primary); }
+.d-nav-item.active { background: var(--color-surface); color: var(--color-text-primary); border-left-color: var(--color-accent); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding-left: 6px; }
+
+.d-sidebar-footer {
+  padding: 12px 12px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.d-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  transition: background .1s;
+}
+.d-user:hover { background: var(--color-bg-tertiary); }
+.d-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--color-accent-subtle);
+  border: 1.5px solid var(--color-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+.d-user-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+.d-user-plan { font-size: 10px; color: var(--color-text-muted); }
+.d-user svg { width: 12px; height: 12px; color: var(--color-text-muted); margin-left: auto; }
+
+/* Desktop main area */
+.d-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.d-topbar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-primary);
+  flex-shrink: 0;
+  gap: 16px;
+}
+.d-topbar-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -.01em; }
+.d-topbar-center {
+  flex: 1;
+  max-width: 320px;
+}
+.d-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  cursor: text;
+  transition: border-color .15s;
+}
+.d-search:hover { border-color: var(--color-border-strong); }
+.d-search svg { width: 13px; height: 13px; color: var(--color-text-muted); flex-shrink: 0; }
+.d-search-text { font-size: 12px; color: var(--color-text-muted); flex: 1; }
+.d-search-kbd {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+.d-topbar-actions { display: flex; gap: 8px; align-items: center; }
+.d-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  border: none;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.d-btn svg { width: 13px; height: 13px; }
+.d-btn-primary { background: var(--color-accent); color: white; }
+.d-btn-primary:hover { background: var(--color-accent-hover); }
+.d-btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default);
+}
+.d-btn-ghost:hover { background: var(--color-bg-tertiary); color: var(--color-text-primary); }
+
+/* Desktop content */
+.d-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; scrollbar-color: var(--color-border-default) transparent; }
+
+/* Usage bar */
+.d-usage-row { display: flex; gap: 12px; margin-bottom: 24px; }
+.d-usage-card {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px 12px;
+}
+.d-usage-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted); margin-bottom: 10px; }
+.d-usage-track { height: 4px; background: var(--color-bg-tertiary); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.d-usage-fill { height: 100%; border-radius: 2px; }
+.fill-safe   { background: var(--color-status-live); }
+.fill-warn   { background: var(--color-status-warn); }
+.fill-danger { background: var(--color-status-error); }
+.d-usage-nums { display: flex; justify-content: space-between; align-items: baseline; }
+.d-usage-val { font-size: 11px; font-family: var(--font-mono); color: var(--color-text-muted); }
+.d-usage-pct { font-size: 11px; font-family: var(--font-mono); font-weight: 500; }
+.pct-safe  { color: var(--color-status-live); }
+.pct-warn  { color: var(--color-status-warn); }
+.pct-danger{ color: var(--color-status-error); }
+
+/* Desktop table */
+.d-table-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.d-table-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+.d-table-meta { font-size: 11px; color: var(--color-text-muted); }
+
+.d-table-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.d-table-header {
+  display: grid;
+  grid-template-columns: 2.5fr 1.5fr 80px 80px 90px 72px;
+  gap: 8px;
+  padding: 9px 16px;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--color-text-muted);
+}
+.d-row {
+  display: grid;
+  grid-template-columns: 2.5fr 1.5fr 80px 80px 90px 72px;
+  gap: 8px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  align-items: center;
+  cursor: pointer;
+  transition: background .08s;
+}
+.d-row:last-child { border-bottom: none; }
+.d-row:hover { background: var(--color-bg-secondary); }
+.d-row-thumb {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-default);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.d-row-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow: hidden; }
+.d-row-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-row-name-wrap { display: flex; align-items: center; gap: 8px; }
+.d-row-slug { font-size: 11px; font-family: var(--font-mono); color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-cell { font-size: 12px; color: var(--color-text-secondary); }
+.d-cell-mono { font-size: 11px; font-family: var(--font-mono); color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.d-action {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .1s, border-color .1s, color .1s;
+}
+.d-action:hover { background: var(--color-bg-tertiary); border-color: var(--color-border-default); color: var(--color-text-secondary); }
+.d-action svg { width: 13px; height: 13px; }
+
+/* Desktop upload zone */
+.d-upload-zone {
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  padding: 32px 24px;
+  text-align: center;
+  margin-top: 16px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.d-upload-zone:hover { border-color: var(--color-accent); background: var(--color-accent-subtle); }
+.d-upload-zone:hover .d-upload-icon { color: var(--color-accent); }
+.d-upload-icon { width: 32px; height: 32px; margin: 0 auto 12px; color: var(--color-text-muted); transition: color .15s; }
+.d-upload-icon svg { width: 32px; height: 32px; }
+.d-upload-title { font-size: 14px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 4px; }
+.d-upload-sub { font-size: 12px; color: var(--color-text-muted); }
+.d-upload-quota {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 4px 12px;
+  background: var(--color-bg-tertiary);
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+.d-upload-quota-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--color-status-live); }
+
+/* Desktop share modal */
+.d-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,10,10,.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.d-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl);
+  width: 440px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,.15);
+}
+.d-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.d-modal-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -.01em; }
+.d-modal-close {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-default);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--color-text-muted);
+}
+.d-modal-close svg { width: 12px; height: 12px; }
+.d-modal-body { padding: 16px 18px; }
+.d-url-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  margin-bottom: 14px;
+}
+.d-url-text { flex: 1; font-size: 12px; font-family: var(--font-mono); color: var(--color-text-primary); }
+.d-copy-btn {
+  padding: 5px 14px;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background .15s;
+}
+.d-copy-btn:hover { background: var(--color-accent-hover); }
+
+.d-modal-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.d-modal-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color .1s, background .1s;
+}
+.d-modal-action:hover { border-color: var(--color-border-strong); background: var(--color-bg-secondary); }
+.d-modal-action-icon { width: 30px; height: 30px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
+.d-modal-action-icon svg { width: 15px; height: 15px; }
+.d-modal-action-label { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); }
+
+.d-modal-meta { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--color-border-subtle); }
+.d-meta-chip {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 9px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+.d-meta-chip svg { width: 11px; height: 11px; color: var(--color-text-muted); }
+
+/* Desktop success state */
+.d-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 32px;
+  text-align: center;
+  background: var(--color-bg-primary);
+}
+.d-success-icon { width: 52px; height: 52px; background: var(--color-status-live-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.d-success-icon svg { width: 24px; height: 24px; color: var(--color-status-live); }
+.d-success-title { font-size: 20px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -.02em; margin-bottom: 6px; }
+.d-success-sub { font-size: 13px; color: var(--color-text-muted); margin-bottom: 24px; }
+.d-success-url {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+.d-success-url-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted); margin-bottom: 5px; }
+.d-success-url-val { font-size: 13px; font-family: var(--font-mono); color: var(--color-text-primary); }
+.d-success-live { font-size: 11px; font-family: var(--font-mono); color: var(--color-status-live); margin-top: 4px; }
+.d-success-btns { display: flex; gap: 10px; width: 100%; max-width: 420px; }
+.d-success-share {
+  flex: 1; padding: 11px;
+  background: var(--color-accent); color: white;
+  border: none; border-radius: var(--radius-lg);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: var(--font-sans);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .15s;
+}
+.d-success-share:hover { background: var(--color-accent-hover); }
+.d-success-share svg { width: 14px; height: 14px; }
+.d-success-back {
+  flex: 1; padding: 11px;
+  background: transparent; color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default); border-radius: var(--radius-lg);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: var(--font-sans); transition: background .15s, color .15s;
+}
+.d-success-back:hover { background: var(--color-bg-tertiary); color: var(--color-text-primary); }
+
+/* ── MOBILE SHARED STYLES ─────────────────────────────────────── */
+.m-topbar {
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-primary);
+  flex-shrink: 0;
+}
+.m-logo { font-size: 17px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -.03em; }
+.m-logo span { color: var(--color-accent); }
+.m-icon-btn { width: 34px; height: 34px; border-radius: var(--radius-md); background: var(--color-bg-tertiary); border: 1px solid var(--color-border-default); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); }
+.m-icon-btn svg { width: 15px; height: 15px; }
+.m-scroll { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: none; background: var(--color-bg-primary); }
+.m-scroll::-webkit-scrollbar { display: none; }
+
+.m-ws { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); margin-bottom: 14px; cursor: pointer; }
+.m-ws-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent); }
+.m-ws-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+.m-ws-badge { font-size: 9px; font-weight: 500; color: var(--color-accent); background: var(--color-accent-subtle); padding: 1px 6px; border-radius: 20px; font-family: var(--font-mono); }
+.m-ws svg { width: 12px; height: 12px; color: var(--color-text-muted); }
+
+.m-usage { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+.m-chip { background: var(--color-surface); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); padding: 10px 10px 9px; }
+.m-chip-label { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted); margin-bottom: 8px; }
+.m-track { height: 3px; background: var(--color-bg-tertiary); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
+.m-fill { height: 100%; border-radius: 2px; }
+.m-fill.safe   { background: var(--color-status-live); }
+.m-fill.warn   { background: var(--color-status-warn); }
+.m-fill.danger { background: var(--color-status-error); }
+.m-val { font-size: 10px; font-family: var(--font-mono); color: var(--color-text-muted); }
+
+.m-sec { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.m-sec-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; color: var(--color-text-muted); }
+.m-sec-cta { font-size: 12px; font-weight: 500; color: var(--color-accent); cursor: pointer; display: flex; align-items: center; gap: 3px; }
+.m-sec-cta svg { width: 12px; height: 12px; }
+
+.m-card { background: var(--color-surface); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); padding: 13px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color .1s; }
+.m-card:hover { border-color: var(--color-border-strong); }
+.m-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.m-thumb { width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--color-bg-tertiary); border: 1px solid var(--color-border-default); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.m-info { flex: 1; min-width: 0; }
+.m-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.m-slug { font-size: 11px; font-family: var(--font-mono); color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-card-bottom { display: flex; align-items: center; gap: 12px; }
+.m-stat { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--color-text-muted); font-family: var(--font-mono); }
+.m-stat svg { width: 11px; height: 11px; }
+.m-actions { margin-left: auto; display: flex; gap: 4px; }
+.m-action { width: 28px; height: 28px; border-radius: var(--radius-md); border: none; background: var(--color-bg-tertiary); color: var(--color-text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.m-action svg { width: 13px; height: 13px; }
+
+.m-upload-zone { border: 1.5px dashed var(--color-border-strong); border-radius: var(--radius-xl); padding: 28px 20px; text-align: center; margin-top: 4px; cursor: pointer; transition: border-color .15s, background .15s; }
+.m-upload-zone:hover { border-color: var(--color-accent); background: var(--color-accent-subtle); }
+.m-upload-icon { margin: 0 auto 10px; width: 28px; height: 28px; color: var(--color-text-muted); }
+.m-upload-icon svg { width: 28px; height: 28px; }
+.m-upload-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 4px; }
+.m-upload-sub { font-size: 11px; color: var(--color-text-muted); line-height: 1.6; }
+.m-upload-quota { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; padding: 4px 10px; background: var(--color-bg-tertiary); border-radius: 20px; font-size: 10px; font-family: var(--font-mono); color: var(--color-text-muted); }
+.m-quota-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--color-status-live); }
+
+.m-fab { position: absolute; bottom: 84px; right: 18px; width: 50px; height: 50px; border-radius: 25px; background: var(--color-accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 14px rgba(249,115,22,.35); z-index: 20; }
+.m-fab svg { width: 20px; height: 20px; }
+
+.m-bottom-nav { height: 72px; display: flex; align-items: center; justify-content: space-around; border-top: 1px solid var(--color-border-subtle); background: var(--color-bg-primary); flex-shrink: 0; padding-bottom: 12px; }
+.m-nav-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 16px; cursor: pointer; }
+.m-nav-tab svg { width: 20px; height: 20px; }
+.m-nav-tab span { font-size: 10px; font-weight: 500; }
+.m-nav-tab.active svg, .m-nav-tab.active span { color: var(--color-accent); }
+.m-nav-tab.inactive svg, .m-nav-tab.inactive span { color: var(--color-text-muted); }
+
+/* Upload screen mobile */
+.m-upload-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; background: var(--color-bg-primary); }
+.m-upload-big-zone { width: 100%; max-width: 320px; border: 2px dashed var(--color-border-strong); border-radius: var(--radius-xl); padding: 40px 24px; cursor: pointer; transition: border-color .15s, background .15s; margin-bottom: 20px; }
+.m-upload-big-zone:hover { border-color: var(--color-accent); background: var(--color-accent-subtle); }
+.m-upload-big-icon { width: 48px; height: 48px; margin: 0 auto 16px; background: var(--color-accent-subtle); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; }
+.m-upload-big-icon svg { width: 24px; height: 24px; color: var(--color-accent); }
+.m-upload-big-title { font-size: 16px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 6px; letter-spacing: -.02em; }
+.m-upload-big-sub { font-size: 12px; color: var(--color-text-muted); line-height: 1.6; }
+.m-formats { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+.m-format-pill { padding: 3px 9px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-default); border-radius: 20px; font-size: 10px; font-family: var(--font-mono); color: var(--color-text-secondary); }
+.m-slug-row { width: 100%; max-width: 320px; }
+.m-slug-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 6px; display: block; }
+.m-slug-wrap { display: flex; align-items: center; background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); overflow: hidden; }
+.m-slug-wrap:focus-within { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(249,115,22,.1); }
+.m-slug-prefix { padding: 9px 10px 9px 12px; font-size: 11px; font-family: var(--font-mono); color: var(--color-text-muted); border-right: 1px solid var(--color-border-default); white-space: nowrap; background: var(--color-bg-tertiary); }
+.m-slug-field { flex: 1; border: none; background: transparent; padding: 9px 12px; font-size: 12px; font-family: var(--font-mono); color: var(--color-text-primary); outline: none; }
+.m-slug-field::placeholder { color: var(--color-text-muted); }
+
+/* Success mobile */
+.m-success-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; text-align: center; background: var(--color-bg-primary); }
+.m-success-icon { width: 56px; height: 56px; background: var(--color-status-live-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.m-success-icon svg { width: 26px; height: 26px; color: var(--color-status-live); }
+.m-success-title { font-size: 18px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -.02em; margin-bottom: 4px; }
+.m-success-sub { font-size: 13px; color: var(--color-text-muted); margin-bottom: 24px; }
+.m-success-url { width: 100%; background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 14px; text-align: left; }
+.m-success-url-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted); margin-bottom: 5px; }
+.m-success-url-val { font-size: 13px; font-family: var(--font-mono); color: var(--color-text-primary); word-break: break-all; }
+.m-success-live { font-size: 11px; font-family: var(--font-mono); color: var(--color-status-live); margin-top: 4px; }
+.m-success-cta { width: 100%; padding: 13px; background: var(--color-accent); color: white; border: none; border-radius: var(--radius-lg); font-size: 14px; font-weight: 500; cursor: pointer; font-family: var(--font-sans); letter-spacing: -.01em; transition: background .15s; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.m-success-cta:hover { background: var(--color-accent-hover); }
+.m-success-cta svg { width: 14px; height: 14px; }
+.m-success-back { font-size: 13px; color: var(--color-text-muted); cursor: pointer; padding: 10px; }
+
+/* Share sheet mobile */
+.m-share-overlay { flex: 1; background: rgba(10,10,10,.35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.m-share-sheet { background: var(--color-surface); border-radius: 24px 24px 0 0; padding: 0 0 20px; flex-shrink: 0; }
+.m-sheet-handle { width: 36px; height: 4px; background: var(--color-border-strong); border-radius: 2px; margin: 12px auto 0; }
+.m-sheet-header { padding: 14px 18px; border-bottom: 1px solid var(--color-border-subtle); display: flex; align-items: center; justify-content: space-between; }
+.m-sheet-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -.01em; }
+.m-sheet-close { width: 26px; height: 26px; border-radius: var(--radius-md); background: var(--color-bg-tertiary); border: 1px solid var(--color-border-default); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-muted); }
+.m-sheet-close svg { width: 12px; height: 12px; }
+.m-url-row { margin: 12px 18px 0; display: flex; align-items: center; gap: 8px; background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); padding: 9px 12px; }
+.m-url-text { flex: 1; font-size: 12px; font-family: var(--font-mono); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-copy-btn { padding: 5px 12px; background: var(--color-accent); color: white; border: none; border-radius: var(--radius-md); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font-sans); flex-shrink: 0; transition: background .15s; }
+.m-copy-btn:hover { background: var(--color-accent-hover); }
+.m-sheet-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 18px; }
+.m-sheet-action { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; padding: 10px 6px; border-radius: var(--radius-lg); border: 1px solid var(--color-border-default); background: var(--color-surface); transition: border-color .1s, background .1s; }
+.m-sheet-action:hover { border-color: var(--color-border-strong); background: var(--color-bg-secondary); }
+.m-sheet-action-icon { width: 32px; height: 32px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
+.m-sheet-action-icon svg { width: 16px; height: 16px; }
+.m-sheet-action-label { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); text-align: center; }
+.m-sheet-meta { padding: 0 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+.m-meta-chip { display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); border-radius: 20px; font-size: 11px; color: var(--color-text-secondary); }
+.m-meta-chip svg { width: 12px; height: 12px; color: var(--color-text-muted); }
+
+/* Screen visibility */
+.d-screen { display: none; }
+.d-screen.active { display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; }
+.m-screen { display: none; }
+.m-screen.active { display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-hd">
+    <h1>DropSites — UI Prototype</h1>
+    <p>Research-grounded design system</p>
+  </div>
+
+  <div class="view-toggle">
+    <button class="vtab active" id="vtab-desktop" onclick="switchView('desktop')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="10" rx="1.5"/><path d="M5 14h6M8 12v2"/></svg>
+      Desktop
+    </button>
+    <button class="vtab" id="vtab-mobile" onclick="switchView('mobile')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1" width="8" height="14" rx="2"/><circle cx="8" cy="12" r=".8" fill="currentColor" stroke="none"/></svg>
+      Mobile
+    </button>
+  </div>
+
+  <div class="screen-tabs">
+    <button class="stab active" onclick="showScreen('dashboard')">Dashboard</button>
+    <button class="stab" onclick="showScreen('upload')">Upload</button>
+    <button class="stab" onclick="showScreen('success')">Published</button>
+    <button class="stab" onclick="showScreen('share')">Share</button>
+  </div>
+
+  <!-- ══════════════════ DESKTOP FRAME ══════════════════ -->
+  <div class="browser-wrap" id="desktop-view" style="display:flex;">
+    <div class="browser">
+      <div class="browser-chrome">
+        <div class="browser-dots">
+          <div class="browser-dot" style="background:#ff5f57"></div>
+          <div class="browser-dot" style="background:#ffbd2e"></div>
+          <div class="browser-dot" style="background:#28c840"></div>
+        </div>
+        <div class="browser-url">
+          <span class="browser-lock"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="5" width="8" height="6" rx="1"/><path d="M4 5V4a2 2 0 014 0v1"/></svg></span>
+          <span class="browser-url-text">app.dropsites.app/dashboard</span>
+        </div>
+      </div>
+      <div class="browser-body">
+
+        <!-- SIDEBAR (always visible on desktop) -->
+        <div class="d-sidebar">
+          <div class="d-sidebar-header">
+            <div class="d-logo">Drop<span>Sites</span></div>
+            <div class="ws-pill">
+              <div class="ws-pill-dot"></div>
+              <span class="ws-pill-name">My Workspace</span>
+              <span class="ws-pill-badge">Pro trial</span>
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+            </div>
+          </div>
+          <div class="d-nav">
+            <div class="d-nav-section">Main</div>
+            <div class="d-nav-item active" onclick="showScreen('dashboard')">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+              Deployments
+            </div>
+            <div class="d-nav-item" onclick="showScreen('upload')">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 7l5-5 5 5"/><path d="M2 14h12"/></svg>
+              Upload
+            </div>
+            <div class="d-nav-item">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12V5l4 3 4-3 4 3v7"/></svg>
+              Analytics
+            </div>
+            <div class="d-nav-section">Workspace</div>
+            <div class="d-nav-item">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="2.5"/><path d="M1 13c0-2.8 2.2-5 5-5"/><circle cx="12" cy="8" r="2"/><path d="M9.5 14c0-1.9 1.1-3.5 3-3.5"/></svg>
+              Members
+            </div>
+            <div class="d-nav-item">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2.5 1.5"/></svg>
+              Usage
+            </div>
+            <div class="d-nav-section">Account</div>
+            <div class="d-nav-item">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+              Settings
+            </div>
+          </div>
+          <div class="d-sidebar-footer">
+            <div class="d-user">
+              <div class="d-avatar">EB</div>
+              <div>
+                <div class="d-user-name">Esteban</div>
+                <div class="d-user-plan">Pro · 14d trial</div>
+              </div>
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 3l4 4-4 4"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- DESKTOP SCREENS -->
+        <div class="d-main">
+
+          <!-- D: DASHBOARD -->
+          <div id="d-screen-dashboard" class="d-screen active">
+            <div class="d-topbar">
+              <span class="d-topbar-title">Deployments</span>
+              <div class="d-topbar-center">
+                <div class="d-search">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l2.5 2.5"/></svg>
+                  <span class="d-search-text">Search deployments…</span>
+                  <span class="d-search-kbd">⌘K</span>
+                </div>
+              </div>
+              <div class="d-topbar-actions">
+                <button class="d-btn d-btn-ghost">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+                  Filter
+                </button>
+                <button class="d-btn d-btn-primary" onclick="showScreen('upload')">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+                  New deployment
+                </button>
+              </div>
+            </div>
+            <div class="d-content">
+              <div class="d-usage-row">
+                <div class="d-usage-card">
+                  <div class="d-usage-label">Storage</div>
+                  <div class="d-usage-track"><div class="d-usage-fill fill-safe" style="width:34%"></div></div>
+                  <div class="d-usage-nums"><span class="d-usage-val">34 MB / 100 MB</span><span class="d-usage-val pct-safe">34%</span></div>
+                </div>
+                <div class="d-usage-card">
+                  <div class="d-usage-label">Deployments</div>
+                  <div class="d-usage-track"><div class="d-usage-fill fill-warn" style="width:60%"></div></div>
+                  <div class="d-usage-nums"><span class="d-usage-val">3 / 5</span><span class="d-usage-val pct-warn">60%</span></div>
+                </div>
+                <div class="d-usage-card">
+                  <div class="d-usage-label">Bandwidth this month</div>
+                  <div class="d-usage-track"><div class="d-usage-fill fill-safe" style="width:12%"></div></div>
+                  <div class="d-usage-nums"><span class="d-usage-val">0.6 GB / 5 GB</span><span class="d-usage-val pct-safe">12%</span></div>
+                </div>
+              </div>
+
+              <div class="d-table-hd">
+                <span class="d-table-title">All deployments</span>
+                <span class="d-table-meta">3 deployments · 2 active</span>
+              </div>
+              <div class="d-table-wrap">
+                <div class="d-table-header">
+                  <div>Name</div><div>URL</div><div>Views</div><div>Updated</div><div>Status</div><div></div>
+                </div>
+                <div class="d-row" onclick="showScreen('share')">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="d-row-thumb">📊</div>
+                    <div class="d-row-info">
+                      <div class="d-row-name-wrap"><span class="d-row-name">CFXP Sprint 14 Retro</span></div>
+                      <div class="d-row-slug">cfxp-sprint-14-retro</div>
+                    </div>
+                  </div>
+                  <div class="d-cell-mono">dropsites.app/cfxp-s…</div>
+                  <div class="d-cell">2,841</div>
+                  <div class="d-cell" style="color:var(--color-text-muted);">2h ago</div>
+                  <div><span class="badge b-live"><span class="badge-dot"></span>live</span></div>
+                  <div class="d-row-actions">
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 9V5l3-3h5l2 2v7a1 1 0 01-1 1H3a1 1 0 01-1-1z"/><path d="M5 2v4h4"/></svg></button>
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 7h9M7 3l4 4-4 4"/></svg></button>
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="2.5" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="7" cy="11.5" r="1.2"/></svg></button>
+                  </div>
+                </div>
+                <div class="d-row">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="d-row-thumb">📋</div>
+                    <div class="d-row-info">
+                      <div class="d-row-name-wrap"><span class="d-row-name">Q1 Delivery Dashboard</span></div>
+                      <div class="d-row-slug">q1-delivery-dashboard</div>
+                    </div>
+                  </div>
+                  <div class="d-cell-mono">dropsites.app/q1-del…</div>
+                  <div class="d-cell">489</div>
+                  <div class="d-cell" style="color:var(--color-text-muted);">1d ago</div>
+                  <div><span class="badge b-locked">🔒 locked</span></div>
+                  <div class="d-row-actions">
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 9V5l3-3h5l2 2v7a1 1 0 01-1 1H3a1 1 0 01-1-1z"/><path d="M5 2v4h4"/></svg></button>
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 7h9M7 3l4 4-4 4"/></svg></button>
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="2.5" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="7" cy="11.5" r="1.2"/></svg></button>
+                  </div>
+                </div>
+                <div class="d-row">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="d-row-thumb">🚀</div>
+                    <div class="d-row-info">
+                      <div class="d-row-name-wrap"><span class="d-row-name">Apollo Proposal v3</span></div>
+                      <div class="d-row-slug">apollo-proposal-v3</div>
+                    </div>
+                  </div>
+                  <div class="d-cell-mono">dropsites.app/apollo…</div>
+                  <div class="d-cell">122</div>
+                  <div class="d-cell" style="color:var(--color-text-muted);">3d ago</div>
+                  <div><span class="badge b-warn">expiring</span></div>
+                  <div class="d-row-actions">
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 9V5l3-3h5l2 2v7a1 1 0 01-1 1H3a1 1 0 01-1-1z"/><path d="M5 2v4h4"/></svg></button>
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 7h9M7 3l4 4-4 4"/></svg></button>
+                    <button class="d-action"><svg viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="2.5" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="7" cy="11.5" r="1.2"/></svg></button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-upload-zone" onclick="showScreen('upload')">
+                <div class="d-upload-icon"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M16 4v20M8 10l8-8 8 8"/><path d="M4 26v2h24v-2"/></svg></div>
+                <div class="d-upload-title">Drop files here to deploy</div>
+                <div class="d-upload-sub">HTML · ZIP · JS · PDF · WASM — or click to browse</div>
+                <div class="d-upload-quota"><div class="d-upload-quota-dot"></div>66 MB storage remaining</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- D: UPLOAD -->
+          <div id="d-screen-upload" class="d-screen">
+            <div class="d-topbar">
+              <span class="d-topbar-title">New deployment</span>
+              <div class="d-topbar-actions">
+                <button class="d-btn d-btn-ghost" onclick="showScreen('dashboard')">Cancel</button>
+              </div>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:32px;background:var(--color-bg-primary);">
+              <div style="width:100%;max-width:520px;">
+                <div style="border:2px dashed var(--color-border-strong);border-radius:var(--radius-xl);padding:48px 32px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:24px;" onclick="showScreen('success')" onmouseover="this.style.borderColor='var(--color-accent)';this.style.background='var(--color-accent-subtle)'" onmouseout="this.style.borderColor='var(--color-border-strong)';this.style.background='transparent'">
+                  <div style="width:52px;height:52px;margin:0 auto 16px;background:var(--color-accent-subtle);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" style="width:26px;height:26px;"><path d="M12 3v14M5 8l7-7 7 7"/><path d="M3 21h18"/></svg>
+                  </div>
+                  <div style="font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px;letter-spacing:-.02em;">Drop your file here</div>
+                  <div style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">or click to browse · HTML, ZIP, JS, PDF, WASM</div>
+                  <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+                    <span style="padding:3px 10px;background:var(--color-bg-tertiary);border:1px solid var(--color-border-default);border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--color-text-secondary);">.html</span>
+                    <span style="padding:3px 10px;background:var(--color-bg-tertiary);border:1px solid var(--color-border-default);border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--color-text-secondary);">.zip</span>
+                    <span style="padding:3px 10px;background:var(--color-bg-tertiary);border:1px solid var(--color-border-default);border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--color-text-secondary);">.js</span>
+                    <span style="padding:3px 10px;background:var(--color-bg-tertiary);border:1px solid var(--color-border-default);border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--color-text-secondary);">.pdf</span>
+                    <span style="padding:3px 10px;background:var(--color-bg-tertiary);border:1px solid var(--color-border-default);border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--color-text-secondary);">.wasm</span>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size:12px;font-weight:500;color:var(--color-text-secondary);display:block;margin-bottom:8px;">Custom URL <span style="color:var(--color-text-muted);font-weight:400;">(optional)</span></label>
+                  <div style="display:flex;align-items:center;background:var(--color-bg-secondary);border:1px solid var(--color-border-default);border-radius:var(--radius-md);overflow:hidden;">
+                    <span style="padding:10px 12px;font-size:12px;font-family:var(--font-mono);color:var(--color-text-muted);border-right:1px solid var(--color-border-default);background:var(--color-bg-tertiary);white-space:nowrap;">dropsites.app/</span>
+                    <input style="flex:1;border:none;background:transparent;padding:10px 14px;font-size:13px;font-family:var(--font-mono);color:var(--color-text-primary);outline:none;" placeholder="my-project-name">
+                  </div>
+                  <div style="font-size:11px;color:var(--color-text-muted);margin-top:6px;">Leave blank for an auto-generated URL</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- D: SUCCESS -->
+          <div id="d-screen-success" class="d-screen">
+            <div class="d-topbar">
+              <span class="d-topbar-title">Published</span>
+            </div>
+            <div class="d-success">
+              <div class="d-success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg></div>
+              <div class="d-success-title">You&apos;re live ✦</div>
+              <div class="d-success-sub">Published in 3.2 seconds</div>
+              <div class="d-success-url">
+                <div class="d-success-url-label">Your link</div>
+                <div class="d-success-url-val">dropsites.app/cfxp-sprint-14-retro</div>
+                <div class="d-success-live">● Live now</div>
+              </div>
+              <div class="d-success-btns">
+                <button class="d-success-share" onclick="showScreen('share')">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h8M9 4l4 4-4 4"/></svg>
+                  Share this link
+                </button>
+                <button class="d-success-back" onclick="showScreen('dashboard')">Back to dashboard</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- D: SHARE (modal over dashboard) -->
+          <div id="d-screen-share" class="d-screen">
+            <div class="d-topbar">
+              <span class="d-topbar-title">Deployments</span>
+              <div class="d-topbar-center">
+                <div class="d-search">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l2.5 2.5"/></svg>
+                  <span class="d-search-text">Search deployments…</span>
+                  <span class="d-search-kbd">⌘K</span>
+                </div>
+              </div>
+              <div class="d-topbar-actions">
+                <button class="d-btn d-btn-primary"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>New deployment</button>
+              </div>
+            </div>
+            <div style="flex:1;position:relative;overflow:hidden;">
+              <div style="padding:24px;opacity:.3;pointer-events:none;">
+                <div class="d-usage-row">
+                  <div class="d-usage-card"><div class="d-usage-label">Storage</div><div class="d-usage-track"><div class="d-usage-fill fill-safe" style="width:34%"></div></div></div>
+                  <div class="d-usage-card"><div class="d-usage-label">Deployments</div><div class="d-usage-track"><div class="d-usage-fill fill-warn" style="width:60%"></div></div></div>
+                  <div class="d-usage-card"><div class="d-usage-label">Bandwidth</div><div class="d-usage-track"><div class="d-usage-fill fill-safe" style="width:12%"></div></div></div>
+                </div>
+                <div class="d-table-wrap">
+                  <div class="d-table-header"><div>Name</div><div>URL</div><div>Views</div><div>Updated</div><div>Status</div><div></div></div>
+                  <div class="d-row"><div style="display:flex;align-items:center;gap:10px;"><div class="d-row-thumb">📊</div><div class="d-row-info"><span class="d-row-name">CFXP Sprint 14 Retro</span></div></div><div class="d-cell-mono">dropsites.app/cfxp-s…</div><div class="d-cell">2,841</div><div class="d-cell">2h ago</div><div><span class="badge b-live"><span class="badge-dot"></span>live</span></div><div></div></div>
+                </div>
+              </div>
+              <div class="d-modal-overlay" onclick="showScreen('dashboard')">
+                <div class="d-modal" onclick="event.stopPropagation()">
+                  <div class="d-modal-header">
+                    <span class="d-modal-title">CFXP Sprint 14 Retro</span>
+                    <div class="d-modal-close" onclick="showScreen('dashboard')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2l10 10M12 2L2 12"/></svg></div>
+                  </div>
+                  <div class="d-modal-body">
+                    <div class="d-url-row">
+                      <span class="d-url-text">dropsites.app/cfxp-sprint-14-retro</span>
+                      <button class="d-copy-btn">Copy</button>
+                    </div>
+                    <div class="d-modal-actions">
+                      <div class="d-modal-action">
+                        <div class="d-modal-action-icon" style="background:var(--color-accent-subtle);"><svg viewBox="0 0 16 16" fill="none" stroke="var(--color-accent)" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M8 5v6"/></svg></div>
+                        <span class="d-modal-action-label">Embed</span>
+                      </div>
+                      <div class="d-modal-action">
+                        <div class="d-modal-action-icon" style="background:#f0fdf4;"><svg viewBox="0 0 16 16" fill="none" stroke="var(--color-status-live)" stroke-width="1.5"><rect x="3" y="3" width="10" height="10" rx="1"/><path d="M6 6h4M6 9h2"/></svg></div>
+                        <span class="d-modal-action-label">QR Code</span>
+                      </div>
+                      <div class="d-modal-action">
+                        <div class="d-modal-action-icon" style="background:#eff6ff;"><svg viewBox="0 0 16 16" fill="none" stroke="var(--primitive-blue-600)" stroke-width="1.5"><path d="M2 12V4l5 4 5-4v8"/></svg></div>
+                        <span class="d-modal-action-label">Email</span>
+                      </div>
+                      <div class="d-modal-action">
+                        <div class="d-modal-action-icon" style="background:var(--color-status-locked-bg);"><svg viewBox="0 0 16 16" fill="none" stroke="var(--color-text-secondary)" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5 7V5a3 3 0 016 0v2"/></svg></div>
+                        <span class="d-modal-action-label">Password</span>
+                      </div>
+                    </div>
+                    <div class="d-modal-meta">
+                      <div class="d-meta-chip"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 6s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4z"/><circle cx="6" cy="6" r="1.5"/></svg>2,841 views</div>
+                      <div class="d-meta-chip"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="6" r="4"/><path d="M6 3v3l2 2"/></svg>Updated 2h ago</div>
+                      <div class="d-meta-chip" style="color:var(--color-status-live);"><svg viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="3"/></svg>Live</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /d-main -->
+
+      </div><!-- /browser-body -->
+    </div><!-- /browser -->
+  </div><!-- /browser-wrap -->
+
+  <!-- ══════════════════ MOBILE FRAME ══════════════════ -->
+  <div class="phone-wrap" id="mobile-view" style="display:none;">
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 14 14" fill="currentColor"><path d="M1 10h2V7H1v3zm3 2h2V5H4v7zm3-4h2V3H7v5zm3 3h2V1h-2v10z"/></svg>
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M7 3C4.2 3 1.8 4.3 0 6.4L2 8c1.3-1.5 3.3-2.5 5-2.5s3.7 1 5 2.5l2-1.6C12.2 4.3 9.8 3 7 3z" opacity=".4"/><path d="M7 6c-1.7 0-3.2.7-4.3 1.8L4.5 9.5C5.2 8.6 6 8 7 8s1.8.6 2.5 1.5L12 7.8C10.8 6.7 9 6 7 6z"/><circle cx="7" cy="11" r="1.2" fill="currentColor" stroke="none"/></svg>
+            <svg viewBox="0 0 22 12" fill="none"><rect x="0" y="1" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="2.5" width="13" height="7" rx="1" fill="currentColor"/><path d="M19 4.5v3a1.5 1.5 0 000-3z" fill="currentColor"/></svg>
+          </div>
+        </div>
+
+        <!-- M: DASHBOARD -->
+        <div id="m-screen-dashboard" class="m-screen active">
+          <div class="m-topbar">
+            <span class="m-logo">Drop<span>Sites</span></span>
+            <div style="display:flex;gap:8px;">
+              <div class="m-icon-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l2.5 2.5"/></svg></div>
+              <div class="m-icon-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="4" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="12" r="1.5"/></svg></div>
+            </div>
+          </div>
+          <div class="m-scroll">
+            <div class="m-ws">
+              <div class="m-ws-dot"></div>
+              <span class="m-ws-name">My Workspace</span>
+              <span class="m-ws-badge">Pro trial</span>
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+            </div>
+            <div class="m-usage">
+              <div class="m-chip"><div class="m-chip-label">Storage</div><div class="m-track"><div class="m-fill safe" style="width:34%"></div></div><div class="m-val">34/100MB</div></div>
+              <div class="m-chip"><div class="m-chip-label">Deploys</div><div class="m-track"><div class="m-fill warn" style="width:60%"></div></div><div class="m-val">3/5</div></div>
+              <div class="m-chip"><div class="m-chip-label">BW</div><div class="m-track"><div class="m-fill safe" style="width:12%"></div></div><div class="m-val">0.6/5GB</div></div>
+            </div>
+            <div class="m-sec">
+              <span class="m-sec-label">Deployments</span>
+              <span class="m-sec-cta" onclick="showScreen('upload')"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v8M2 6h8"/></svg>New</span>
+            </div>
+            <div class="m-card" onclick="showScreen('share')">
+              <div class="m-card-top"><div class="m-thumb">📊</div><div class="m-info"><div class="m-name">CFXP Sprint 14 Retro</div><div class="m-slug">dropsites.app/cfxp-sprint-14</div></div><div class="badge b-live"><span class="badge-dot"></span>live</div></div>
+              <div class="m-card-bottom"><div class="m-stat"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 6s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4z"/><circle cx="6" cy="6" r="1.5"/></svg>2,841</div><div class="m-stat">2h ago</div><div class="m-actions"><button class="m-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="5" width="6" height="7" rx="1"/><path d="M4 5V4a3 3 0 016 0v1"/></svg></button><button class="m-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 7h9M7 3l4 4-4 4"/></svg></button></div></div>
+            </div>
+            <div class="m-card">
+              <div class="m-card-top"><div class="m-thumb">📋</div><div class="m-info"><div class="m-name">Q1 Delivery Dashboard</div><div class="m-slug">dropsites.app/q1-delivery</div></div><div class="badge b-locked">🔒 locked</div></div>
+              <div class="m-card-bottom"><div class="m-stat"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 6s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4z"/><circle cx="6" cy="6" r="1.5"/></svg>489</div><div class="m-stat">1d ago</div><div class="m-actions"><button class="m-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="5" width="6" height="7" rx="1"/><path d="M4 5V4a3 3 0 016 0v1"/></svg></button><button class="m-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 7h9M7 3l4 4-4 4"/></svg></button></div></div>
+            </div>
+            <div class="m-card">
+              <div class="m-card-top"><div class="m-thumb">🚀</div><div class="m-info"><div class="m-name">Apollo Proposal v3</div><div class="m-slug">dropsites.app/apollo-v3</div></div><div class="badge b-warn">expiring</div></div>
+              <div class="m-card-bottom"><div class="m-stat"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 6s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4z"/><circle cx="6" cy="6" r="1.5"/></svg>122</div><div class="m-stat">3d ago</div><div class="m-actions"><button class="m-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="5" width="6" height="7" rx="1"/><path d="M4 5V4a3 3 0 016 0v1"/></svg></button><button class="m-action"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 7h9M7 3l4 4-4 4"/></svg></button></div></div>
+            </div>
+            <div class="m-upload-zone" onclick="showScreen('upload')">
+              <div class="m-upload-icon"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 4v16M7 9l7-7 7 7"/><path d="M4 22v2h20v-2"/></svg></div>
+              <div class="m-upload-title">Drop files to deploy</div>
+              <div class="m-upload-sub">HTML · ZIP · JS · PDF<br>Tap to browse</div>
+              <div class="m-upload-quota"><div class="m-quota-dot"></div>66 MB remaining</div>
+            </div>
+          </div>
+          <button class="m-fab" onclick="showScreen('upload')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 4v12M4 10h12"/></svg></button>
+          <div class="m-bottom-nav">
+            <div class="m-nav-tab active"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h14M3 10h10M3 15h12"/></svg><span>Files</span></div>
+            <div class="m-nav-tab inactive"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 14l4-5 3 3 3-4 4 6H4z"/></svg><span>Analytics</span></div>
+            <div class="m-nav-tab inactive"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="8" r="3"/><path d="M3 18c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg><span>Account</span></div>
+          </div>
+        </div>
+
+        <!-- M: UPLOAD -->
+        <div id="m-screen-upload" class="m-screen">
+          <div class="m-topbar"><span class="m-logo">Drop<span>Sites</span></span><div class="m-icon-btn" onclick="showScreen('dashboard')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4L6 8l4 4"/></svg></div></div>
+          <div class="m-upload-hero">
+            <div class="m-upload-big-zone" onclick="showScreen('success')">
+              <div class="m-upload-big-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v14M5 8l7-7 7 7"/><path d="M3 21h18"/></svg></div>
+              <div class="m-upload-big-title">Drop your file here</div>
+              <div class="m-upload-big-sub">or tap to browse your device</div>
+              <div class="m-formats"><span class="m-format-pill">.html</span><span class="m-format-pill">.zip</span><span class="m-format-pill">.js</span><span class="m-format-pill">.pdf</span><span class="m-format-pill">.wasm</span></div>
+            </div>
+            <div class="m-slug-row">
+              <label class="m-slug-label">Custom URL (optional)</label>
+              <div class="m-slug-wrap"><span class="m-slug-prefix">dropsites.app/</span><input class="m-slug-field" type="text" placeholder="my-project-name"></div>
+            </div>
+          </div>
+          <div class="m-bottom-nav">
+            <div class="m-nav-tab inactive" onclick="showScreen('dashboard')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h14M3 10h10M3 15h12"/></svg><span>Files</span></div>
+            <div class="m-nav-tab inactive"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 14l4-5 3 3 3-4 4 6H4z"/></svg><span>Analytics</span></div>
+            <div class="m-nav-tab inactive"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="8" r="3"/><path d="M3 18c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg><span>Account</span></div>
+          </div>
+        </div>
+
+        <!-- M: SUCCESS -->
+        <div id="m-screen-success" class="m-screen">
+          <div class="m-topbar"><span class="m-logo">Drop<span>Sites</span></span></div>
+          <div class="m-success-body">
+            <div class="m-success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg></div>
+            <div class="m-success-title">You&apos;re live ✦</div>
+            <div class="m-success-sub">Published in 3.2 seconds</div>
+            <div class="m-success-url"><div class="m-success-url-label">Your link</div><div class="m-success-url-val">dropsites.app/cfxp-sprint-14-retro</div><div class="m-success-live">● Live now</div></div>
+            <button class="m-success-cta" onclick="showScreen('share')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h8M9 4l4 4-4 4"/></svg>Share this link</button>
+            <div class="m-success-back" onclick="showScreen('dashboard')">Back to dashboard</div>
+          </div>
+          <div class="m-bottom-nav">
+            <div class="m-nav-tab inactive" onclick="showScreen('dashboard')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h14M3 10h10M3 15h12"/></svg><span>Files</span></div>
+            <div class="m-nav-tab inactive"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 14l4-5 3 3 3-4 4 6H4z"/></svg><span>Analytics</span></div>
+            <div class="m-nav-tab inactive"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="8" r="3"/><path d="M3 18c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg><span>Account</span></div>
+          </div>
+        </div>
+
+        <!-- M: SHARE -->
+        <div id="m-screen-share" class="m-screen">
+          <div class="m-topbar"><span class="m-logo">Drop<span>Sites</span></span></div>
+          <div class="m-share-overlay" onclick="showScreen('dashboard')"></div>
+          <div class="m-share-sheet">
+            <div class="m-sheet-handle"></div>
+            <div class="m-sheet-header"><span class="m-sheet-title">CFXP Sprint 14 Retro</span><div class="m-sheet-close" onclick="showScreen('dashboard')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2l10 10M12 2L2 12"/></svg></div></div>
+            <div class="m-url-row"><span class="m-url-text">dropsites.app/cfxp-sprint-14-retro</span><button class="m-copy-btn">Copy</button></div>
+            <div class="m-sheet-actions">
+              <div class="m-sheet-action"><div class="m-sheet-action-icon" style="background:var(--color-accent-subtle);"><svg viewBox="0 0 16 16" fill="none" stroke="var(--color-accent)" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M8 5v6"/></svg></div><span class="m-sheet-action-label">Embed</span></div>
+              <div class="m-sheet-action"><div class="m-sheet-action-icon" style="background:#f0fdf4;"><svg viewBox="0 0 16 16" fill="none" stroke="var(--color-status-live)" stroke-width="1.5"><rect x="3" y="3" width="10" height="10" rx="1"/><path d="M6 6h4M6 9h2"/></svg></div><span class="m-sheet-action-label">QR Code</span></div>
+              <div class="m-sheet-action"><div class="m-sheet-action-icon" style="background:#eff6ff;"><svg viewBox="0 0 16 16" fill="none" stroke="var(--primitive-blue-600)" stroke-width="1.5"><path d="M2 12V4l5 4 5-4v8"/></svg></div><span class="m-sheet-action-label">Email</span></div>
+              <div class="m-sheet-action"><div class="m-sheet-action-icon" style="background:var(--color-status-locked-bg);"><svg viewBox="0 0 16 16" fill="none" stroke="var(--color-text-secondary)" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5 7V5a3 3 0 016 0v2"/></svg></div><span class="m-sheet-action-label">Password</span></div>
+            </div>
+            <div class="m-sheet-meta">
+              <div class="m-meta-chip"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 6s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4z"/><circle cx="6" cy="6" r="1.5"/></svg>2,841 views</div>
+              <div class="m-meta-chip" style="color:var(--color-status-live);"><svg viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="3"/></svg>Live</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /phone-screen -->
+    </div><!-- /phone -->
+  </div><!-- /phone-wrap -->
+
+</div><!-- /stage -->
+
+<script>
+const currentScreen = { id: 'dashboard' };
+
+function showScreen(id) {
+  currentScreen.id = id;
+  // Update desktop screens
+  document.querySelectorAll('.d-screen').forEach(s => s.classList.remove('active'));
+  const ds = document.getElementById('d-screen-' + id);
+  if (ds) ds.classList.add('active');
+  // Update mobile screens
+  document.querySelectorAll('.m-screen').forEach(s => s.classList.remove('active'));
+  const ms = document.getElementById('m-screen-' + id);
+  if (ms) ms.classList.add('active');
+  // Update tabs
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  const map = { dashboard: 0, upload: 1, success: 2, share: 3 };
+  const tabs = document.querySelectorAll('.stab');
+  if (tabs[map[id]]) tabs[map[id]].classList.add('active');
+  // Update desktop nav
+  document.querySelectorAll('.d-nav-item').forEach(n => n.classList.remove('active'));
+  if (id === 'dashboard' || id === 'share') {
+    document.querySelectorAll('.d-nav-item')[0].classList.add('active');
+  } else if (id === 'upload') {
+    document.querySelectorAll('.d-nav-item')[1].classList.add('active');
+  }
+}
+
+function switchView(view) {
+  document.getElementById('desktop-view').style.display = view === 'desktop' ? 'flex' : 'none';
+  document.getElementById('mobile-view').style.display = view === 'mobile' ? 'flex' : 'none';
+  document.getElementById('vtab-desktop').classList.toggle('active', view === 'desktop');
+  document.getElementById('vtab-mobile').classList.toggle('active', view === 'mobile');
+}
+</script>
+</body>
+</html>

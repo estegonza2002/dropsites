@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en" style="color-scheme:light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>DropSites — HTML is better than PowerPoint. Now you can actually share it.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ───────────────────────────────────────────────────── */
+:root {
+  --bg:        #fafaf8;
+  --surface:   #ffffff;
+  --nav-bg:    #fafaf8;
+  --border:    #e4e4e7;
+  --border-sub:#f4f4f5;
+  --text-1:    #0a0a0a;
+  --text-2:    #52525b;
+  --text-3:    #a1a1aa;
+  --accent:    #f97316;
+  --accent-h:  #ea580c;
+  --accent-s:  #fff7ed;
+  --green:     #16a34a;
+  --green-bg:  #dcfce7;
+  --font:      'Geist', system-ui, sans-serif;
+  --mono:      'Geist Mono', monospace;
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; background: var(--bg); }
+body {
+  font-family: var(--font);
+  font-size: 15px;
+  color: var(--text-1);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── NAV ──────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 60px;
+  background: rgba(250,250,248,.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(20px, 5vw, 64px);
+}
+.nav-logo {
+  font-size: 18px; font-weight: 500; color: var(--text-1);
+  letter-spacing: -.03em; text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links {
+  display: flex; align-items: center; gap: 28px;
+  list-style: none;
+}
+.nav-links a {
+  font-size: 14px; font-weight: 400; color: var(--text-2);
+  text-decoration: none; transition: color .15s;
+}
+.nav-links a:hover { color: var(--text-1); }
+.nav-ctas { display: flex; gap: 10px; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: var(--r-md);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: var(--font); text-decoration: none;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap; border: none;
+}
+.btn svg { width: 14px; height: 14px; }
+.btn-ghost {
+  background: transparent; color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--border-sub); color: var(--text-1); }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-h); }
+.btn-primary-lg {
+  background: var(--accent); color: white;
+  padding: 13px 28px; font-size: 15px; border-radius: var(--r-md);
+}
+.btn-primary-lg:hover { background: var(--accent-h); }
+.btn-ghost-lg {
+  background: transparent; color: var(--text-2);
+  border: 1px solid var(--border); padding: 13px 28px; font-size: 15px;
+  border-radius: var(--r-md);
+}
+.btn-ghost-lg:hover { background: var(--border-sub); color: var(--text-1); }
+.nav-mobile-btn { display: none; }
+
+/* ── HERO ─────────────────────────────────────────────────────── */
+.hero {
+  padding: 140px clamp(20px, 5vw, 64px) 80px;
+  text-align: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 14px; border-radius: 20px;
+  background: var(--accent-s);
+  border: 1px solid rgba(249,115,22,.2);
+  font-size: 12px; font-weight: 500; color: var(--accent);
+  margin-bottom: 28px; letter-spacing: .01em;
+}
+.hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.hero-h1 {
+  font-size: clamp(36px, 5.5vw, 68px);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -.03em;
+  color: var(--text-1);
+  max-width: 900px;
+  margin: 0 auto 20px;
+}
+.hero-h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+.hero-sub {
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 400;
+  color: var(--text-2);
+  max-width: 580px;
+  margin: 0 auto 40px;
+  line-height: 1.6;
+}
+.hero-ctas {
+  display: flex; gap: 12px; justify-content: center;
+  flex-wrap: wrap; margin-bottom: 16px;
+}
+.hero-cta-note {
+  font-size: 12px; color: var(--text-3);
+  display: flex; align-items: center; gap: 5px;
+  justify-content: center;
+}
+.hero-cta-note svg { width: 12px; height: 12px; color: var(--green); }
+
+/* ── SOCIAL PROOF BAR ─────────────────────────────────────────── */
+.proof-bar {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 18px clamp(20px, 5vw, 64px);
+  display: flex; align-items: center; justify-content: center;
+  gap: clamp(24px, 4vw, 56px);
+  flex-wrap: wrap;
+}
+.proof-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.proof-num {
+  font-size: 22px; font-weight: 500; color: var(--text-1);
+  letter-spacing: -.02em; font-family: var(--mono);
+}
+.proof-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; font-weight: 500; }
+.proof-div { width: 1px; height: 32px; background: var(--border); }
+
+/* ── PRODUCT VISUAL ───────────────────────────────────────────── */
+.product-visual {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 60px clamp(20px, 5vw, 64px);
+}
+.browser-mock {
+  background: #1a1a1a;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.08);
+}
+.browser-bar {
+  height: 40px;
+  background: #242424;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid #333;
+}
+.browser-dots { display: flex; gap: 6px; }
+.bdot { width: 10px; height: 10px; border-radius: 50%; }
+.browser-url-mock {
+  flex: 1; max-width: 360px; margin: 0 auto;
+  background: #1e1e1e; border: 1px solid #333;
+  border-radius: 5px; height: 24px;
+  display: flex; align-items: center; padding: 0 10px; gap: 5px;
+}
+.browser-url-mock span { font-size: 11px; font-family: var(--mono); color: #666; }
+.browser-content {
+  padding: 0;
+  display: flex; height: 420px;
+  background: var(--bg);
+}
+/* Mini sidebar */
+.mock-sidebar {
+  width: 196px; flex-shrink: 0;
+  background: #fafafa;
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.mock-logo { font-size: 14px; font-weight: 500; color: var(--text-1); letter-spacing: -.02em; margin-bottom: 14px; padding: 0 6px; }
+.mock-logo span { color: var(--accent); }
+.mock-ws {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 8px; background: white; border: 1px solid var(--border);
+  border-radius: 6px; margin-bottom: 12px;
+}
+.mock-ws-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.mock-ws-name { font-size: 11px; font-weight: 500; color: var(--text-1); flex: 1; }
+.mock-ws-badge { font-size: 9px; color: var(--accent); background: var(--accent-s); padding: 1px 5px; border-radius: 20px; font-family: var(--mono); }
+.mock-nav-label { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); padding: 0 8px; margin-top: 4px; margin-bottom: 2px; }
+.mock-nav-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 8px; border-radius: 5px;
+  font-size: 11px; font-weight: 500; color: var(--text-2);
+  border-left: 2px solid transparent;
+}
+.mock-nav-item.active {
+  background: white; color: var(--text-1);
+  border-left-color: var(--accent);
+  border-radius: 0 5px 5px 0; padding-left: 6px;
+}
+.mock-nav-item svg { width: 12px; height: 12px; flex-shrink: 0; }
+.mock-user {
+  margin-top: auto; padding: 8px; display: flex; align-items: center; gap: 6px;
+  border-top: 1px solid var(--border); padding-top: 10px;
+}
+.mock-avatar {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent-s); border: 1.5px solid var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 500; color: var(--accent);
+}
+.mock-uname { font-size: 11px; font-weight: 500; color: var(--text-1); }
+.mock-uplan { font-size: 9px; color: var(--text-3); }
+
+/* Mini main */
+.mock-main {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+}
+.mock-topbar {
+  height: 46px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; border-bottom: 1px solid var(--border-sub);
+  background: white; flex-shrink: 0;
+}
+.mock-title { font-size: 13px; font-weight: 500; color: var(--text-1); }
+.mock-search {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 5px; padding: 5px 10px;
+  font-size: 11px; color: var(--text-3);
+}
+.mock-search svg { width: 11px; height: 11px; }
+.mock-search-kbd {
+  padding: 1px 4px; background: white; border: 1px solid var(--border);
+  border-radius: 3px; font-size: 9px; font-family: var(--mono); color: var(--text-3);
+}
+.mock-new-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px; background: var(--accent); color: white;
+  border-radius: 5px; font-size: 11px; font-weight: 500;
+}
+.mock-new-btn svg { width: 11px; height: 11px; }
+
+.mock-content { flex: 1; padding: 14px 18px; overflow: hidden; }
+.mock-usage { display: flex; gap: 10px; margin-bottom: 14px; }
+.mock-chip {
+  flex: 1; padding: 9px 10px 8px;
+  background: white; border: 1px solid var(--border); border-radius: 7px;
+}
+.mock-chip-label { font-size: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); margin-bottom: 6px; }
+.mock-track { height: 3px; background: #f4f4f5; border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+.mock-fill { height: 100%; border-radius: 2px; }
+.mock-val { font-size: 9px; font-family: var(--mono); color: var(--text-3); }
+.mock-table-wrap { background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.mock-table-hd {
+  display: grid; grid-template-columns: 2fr 1.2fr 60px 70px 80px;
+  gap: 6px; padding: 7px 12px; background: #fafafa;
+  border-bottom: 1px solid var(--border-sub);
+  font-size: 8.5px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-3);
+}
+.mock-row {
+  display: grid; grid-template-columns: 2fr 1.2fr 60px 70px 80px;
+  gap: 6px; padding: 9px 12px; border-bottom: 1px solid var(--border-sub);
+  align-items: center;
+}
+.mock-row:last-child { border-bottom: none; }
+.mock-row:hover { background: #fafafa; }
+.mock-row-name { font-size: 11px; font-weight: 500; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mock-row-slug { font-size: 9px; font-family: var(--mono); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mock-cell { font-size: 10px; color: var(--text-2); font-family: var(--mono); }
+.mock-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 20px; font-size: 9px; font-weight: 500;
+}
+.mock-badge-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.mb-live   { color: #16a34a; background: #dcfce7; }
+.mb-locked { color: #52525b; background: #f4f4f5; }
+.mb-warn   { color: #d97706; background: #fef3c7; }
+.mb-error  { color: #dc2626; background: #fee2e2; }
+
+/* ── SECTION WRAPPER ──────────────────────────────────────────── */
+.section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 80px clamp(20px, 5vw, 64px);
+}
+.section-center { text-align: center; }
+.section-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--accent); margin-bottom: 14px;
+}
+.section-h2 {
+  font-size: clamp(28px, 4vw, 44px); font-weight: 500;
+  letter-spacing: -.025em; color: var(--text-1); line-height: 1.1;
+  margin-bottom: 14px;
+}
+.section-sub {
+  font-size: 17px; color: var(--text-2); max-width: 560px;
+  margin: 0 auto 56px; line-height: 1.65;
+}
+
+/* ── HOW IT WORKS ─────────────────────────────────────────────── */
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.how-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 28px 24px;
+  position: relative;
+}
+.how-num {
+  font-size: 11px; font-weight: 500; font-family: var(--mono);
+  color: var(--accent); background: var(--accent-s);
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+}
+.how-title { font-size: 15px; font-weight: 500; color: var(--text-1); margin-bottom: 8px; letter-spacing: -.01em; }
+.how-body { font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+.how-connector {
+  position: absolute; top: 42px; right: -28px;
+  display: flex; align-items: center;
+  color: var(--text-3); z-index: 1;
+}
+.how-connector svg { width: 20px; height: 20px; }
+
+/* ── USE CASES ────────────────────────────────────────────────── */
+.usecases { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.usecase-tabs {
+  display: flex; gap: 8px; margin-bottom: 40px; flex-wrap: wrap;
+  justify-content: center;
+}
+.uc-tab {
+  padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border); background: transparent;
+  color: var(--text-2); transition: all .15s; font-family: var(--font);
+}
+.uc-tab:hover { border-color: var(--accent); color: var(--accent); }
+.uc-tab.active { background: var(--accent-s); border-color: var(--accent); color: var(--accent); }
+.uc-content {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center;
+}
+.uc-panel { display: none; }
+.uc-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+.uc-label {
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--accent); margin-bottom: 12px;
+}
+.uc-h3 { font-size: 26px; font-weight: 500; letter-spacing: -.02em; color: var(--text-1); margin-bottom: 14px; line-height: 1.2; }
+.uc-body { font-size: 15px; color: var(--text-2); line-height: 1.7; margin-bottom: 24px; }
+.uc-bullets { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.uc-bullets li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 14px; color: var(--text-2); line-height: 1.5;
+}
+.uc-check { width: 18px; height: 18px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.uc-check svg { width: 10px; height: 10px; color: var(--green); }
+.uc-visual {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 20px; min-height: 260px; display: flex; flex-direction: column; gap: 10px;
+}
+
+/* ── FEATURES GRID ────────────────────────────────────────────── */
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.feat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 24px;
+}
+.feat-icon {
+  width: 36px; height: 36px; border-radius: var(--r-md);
+  background: var(--accent-s); display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.feat-icon svg { width: 18px; height: 18px; color: var(--accent); }
+.feat-title { font-size: 14px; font-weight: 500; color: var(--text-1); margin-bottom: 7px; letter-spacing: -.01em; }
+.feat-body { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+
+/* ── PRICING ──────────────────────────────────────────────────── */
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
+.price-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 28px 24px;
+  position: relative; transition: box-shadow .2s;
+}
+.price-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.07); }
+.price-card.featured {
+  border-color: var(--accent); background: var(--surface);
+  box-shadow: 0 4px 20px rgba(249,115,22,.12);
+}
+.price-popular {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: white; font-size: 11px; font-weight: 500;
+  padding: 3px 14px; border-radius: 20px; white-space: nowrap; letter-spacing: .03em;
+}
+.price-tier { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .08em; }
+.price-amount { font-size: 40px; font-weight: 500; color: var(--text-1); letter-spacing: -.03em; line-height: 1; margin-bottom: 4px; font-family: var(--mono); }
+.price-amount span { font-size: 16px; font-weight: 400; color: var(--text-3); letter-spacing: 0; }
+.price-desc { font-size: 13px; color: var(--text-2); margin-bottom: 20px; line-height: 1.5; }
+.price-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 18px; }
+.price-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.price-features li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; color: var(--text-2); line-height: 1.4; }
+.price-feat-icon { width: 16px; height: 16px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.price-feat-icon svg { width: 9px; height: 9px; color: var(--green); }
+.price-cta { display: block; width: 100%; padding: 11px; text-align: center; border-radius: var(--r-md); font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font); text-decoration: none; transition: background .15s, color .15s, border-color .15s; }
+.price-cta-free { background: transparent; color: var(--text-1); border: 1px solid var(--border); }
+.price-cta-free:hover { background: var(--bg); }
+.price-cta-pro { background: var(--accent); color: white; border: 1px solid transparent; }
+.price-cta-pro:hover { background: var(--accent-h); }
+.price-cta-ent { background: var(--text-1); color: white; border: 1px solid transparent; }
+.price-cta-ent:hover { background: #27272a; }
+.price-enterprise-note { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 8px; }
+
+/* ── ENTERPRISE SECTION ───────────────────────────────────────── */
+.enterprise-section {
+  background: var(--text-1);
+  padding: 80px clamp(20px, 5vw, 64px);
+}
+.enterprise-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+}
+.ent-eyebrow { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); margin-bottom: 14px; }
+.ent-h2 { font-size: clamp(28px, 3.5vw, 40px); font-weight: 500; letter-spacing: -.025em; color: white; line-height: 1.15; margin-bottom: 16px; }
+.ent-body { font-size: 16px; color: #a1a1aa; line-height: 1.7; margin-bottom: 28px; }
+.ent-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+.ent-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #d4d4d8; }
+.ent-feat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 6px; }
+.ent-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-white { background: white; color: var(--text-1); font-size: 14px; padding: 11px 24px; border-radius: var(--r-md); border: none; }
+.btn-white:hover { background: #f4f4f5; }
+.btn-ghost-white { background: transparent; color: #a1a1aa; border: 1px solid #3f3f46; font-size: 14px; padding: 11px 24px; border-radius: var(--r-md); }
+.btn-ghost-white:hover { color: white; border-color: #71717a; }
+.ent-visual {
+  background: #141414; border: 1px solid #2a2a2a;
+  border-radius: var(--r-xl); padding: 24px; display: flex; flex-direction: column; gap: 14px;
+}
+.ent-vis-header { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: #555; margin-bottom: 4px; }
+.ent-token-row { display: flex; align-items: center; gap: 10px; }
+.ent-token-key { font-size: 12px; font-family: var(--mono); color: #888; min-width: 180px; }
+.ent-token-val { font-size: 12px; font-family: var(--mono); color: #ccc; }
+.ent-token-dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(255,255,255,.1); }
+.ent-divider { border: none; border-top: 1px solid #222; }
+.ent-token-changed { color: var(--accent) !important; }
+
+/* ── TESTIMONIALS ─────────────────────────────────────────────── */
+.testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.testi-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 24px;
+}
+.testi-stars { display: flex; gap: 2px; margin-bottom: 12px; }
+.testi-stars svg { width: 14px; height: 14px; color: var(--accent); }
+.testi-quote { font-size: 14px; color: var(--text-2); line-height: 1.65; margin-bottom: 18px; font-style: italic; }
+.testi-author { display: flex; align-items: center; gap: 10px; }
+.testi-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500; color: white; flex-shrink: 0;
+}
+.testi-name { font-size: 13px; font-weight: 500; color: var(--text-1); }
+.testi-role { font-size: 11px; color: var(--text-3); }
+
+/* ── FINAL CTA ────────────────────────────────────────────────── */
+.final-cta {
+  text-align: center;
+  padding: 100px clamp(20px, 5vw, 64px);
+  border-top: 1px solid var(--border);
+}
+.final-cta h2 { font-size: clamp(30px, 4vw, 48px); font-weight: 500; letter-spacing: -.025em; color: var(--text-1); margin-bottom: 14px; }
+.final-cta p { font-size: 17px; color: var(--text-2); margin-bottom: 36px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+.final-cta-note { font-size: 12px; color: var(--text-3); margin-top: 14px; }
+
+/* ── FOOTER ───────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px clamp(20px, 5vw, 64px);
+  max-width: 1100px; margin: 0 auto;
+  display: grid; grid-template-columns: 1.5fr repeat(3, 1fr);
+  gap: 40px;
+}
+.footer-brand { }
+.footer-logo { font-size: 17px; font-weight: 500; color: var(--text-1); letter-spacing: -.03em; margin-bottom: 8px; }
+.footer-logo span { color: var(--accent); }
+.footer-tagline { font-size: 13px; color: var(--text-3); line-height: 1.5; max-width: 220px; }
+.footer-col h4 { font-size: 12px; font-weight: 500; color: var(--text-1); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.footer-col ul a { font-size: 13px; color: var(--text-3); text-decoration: none; transition: color .15s; }
+.footer-col ul a:hover { color: var(--text-1); }
+.footer-bottom {
+  border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 64px);
+  max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.footer-bottom p { font-size: 12px; color: var(--text-3); }
+
+/* ── RESPONSIVE ───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .nav-mobile-btn { display: flex; }
+  .how-grid { grid-template-columns: 1fr; }
+  .how-connector { display: none; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
+  .enterprise-inner { grid-template-columns: 1fr; }
+  .ent-visual { display: none; }
+  .testi-grid { grid-template-columns: 1fr; }
+  footer { grid-template-columns: 1fr 1fr; }
+  .uc-panel.active { grid-template-columns: 1fr; }
+  .uc-visual { display: none; }
+}
+
+@media (max-width: 600px) {
+  .hero-ctas { flex-direction: column; align-items: center; }
+  .features-grid { grid-template-columns: 1fr; }
+  footer { grid-template-columns: 1fr; }
+  .proof-bar { gap: 20px; }
+  .proof-div { display: none; }
+  .browser-content { height: 300px; }
+  .mock-sidebar { width: 140px; }
+  .mock-table-hd, .mock-row { grid-template-columns: 2fr 80px 80px; }
+  .mock-table-hd > *:nth-child(2),
+  .mock-row > *:nth-child(2) { display: none; }
+  .ent-ctas { flex-direction: column; }
+}
+
+/* ── ANIMATIONS ───────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp .5s ease both; }
+.fade-up-2 { animation: fadeUp .5s .1s ease both; }
+.fade-up-3 { animation: fadeUp .5s .2s ease both; }
+
+/* ── FORCE LIGHT ──────────────────────────────────────────────── */
+html { background-color: #fafaf8 !important; }
+body { background-color: #fafaf8 !important; color: #0a0a0a !important; }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────────────── -->
+<nav>
+  <a href="#" class="nav-logo">Drop<span>Sites</span></a>
+  <ul class="nav-links">
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#enterprise">Enterprise</a></li>
+  </ul>
+  <div class="nav-ctas">
+    <a href="#" class="btn btn-ghost">Sign in</a>
+    <a href="#" class="btn btn-primary">
+      Start free
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h8M8 3l4 4-4 4"/></svg>
+    </a>
+  </div>
+  <button class="btn btn-ghost nav-mobile-btn">Menu</button>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge fade-up">
+    <div class="hero-badge-dot"></div>
+    Now in early access — free to start
+  </div>
+  <h1 class="hero-h1 fade-up-2">
+    HTML is better than PowerPoint.<br>
+    <em>Now you can actually share it.</em>
+  </h1>
+  <p class="hero-sub fade-up-3">
+    Drop any static file — HTML, ZIP, JS, PDF — and get a permanent, shareable link in seconds. Built for AI-generated deliverables, client work, and everything in between.
+  </p>
+  <div class="hero-ctas fade-up-3">
+    <a href="#" class="btn btn-primary-lg">
+      Start free — no card needed
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+    </a>
+    <a href="#enterprise" class="btn btn-ghost-lg">Book an enterprise demo</a>
+  </div>
+  <div class="hero-cta-note fade-up-3">
+    <svg viewBox="0 0 12 12" fill="currentColor"><path d="M5 10l-3-3 1.4-1.4L5 7.2l4.6-4.6L11 4z"/></svg>
+    Free tier · No credit card · Deploy in 60 seconds
+  </div>
+</section>
+
+<!-- ── PROOF BAR ─────────────────────────────────────────────────── -->
+<div class="proof-bar">
+  <div class="proof-item">
+    <span class="proof-num">< 60s</span>
+    <span class="proof-label">File to live link</span>
+  </div>
+  <div class="proof-div"></div>
+  <div class="proof-item">
+    <span class="proof-num">99.9%</span>
+    <span class="proof-label">Uptime SLA</span>
+  </div>
+  <div class="proof-div"></div>
+  <div class="proof-item">
+    <span class="proof-num">$0</span>
+    <span class="proof-label">Egress fees</span>
+  </div>
+  <div class="proof-div"></div>
+  <div class="proof-item">
+    <span class="proof-num">HTML · JS · ZIP · PDF</span>
+    <span class="proof-label">Supported formats</span>
+  </div>
+  <div class="proof-div"></div>
+  <div class="proof-item">
+    <span class="proof-num">Self-hostable</span>
+    <span class="proof-label">Enterprise ready</span>
+  </div>
+</div>
+
+<!-- ── PRODUCT VISUAL ─────────────────────────────────────────────── -->
+<div class="product-visual">
+  <div class="browser-mock">
+    <div class="browser-bar">
+      <div class="browser-dots">
+        <div class="bdot" style="background:#ff5f57"></div>
+        <div class="bdot" style="background:#ffbd2e"></div>
+        <div class="bdot" style="background:#28c840"></div>
+      </div>
+      <div class="browser-url-mock">
+        <svg viewBox="0 0 12 12" fill="none" stroke="#555" stroke-width="1.2" style="width:10px;height:10px;flex-shrink:0;"><rect x="2" y="5" width="8" height="6" rx="1"/><path d="M4 5V4a2 2 0 014 0v1"/></svg>
+        <span>app.dropsites.app/dashboard</span>
+      </div>
+    </div>
+    <div class="browser-content">
+      <div class="mock-sidebar">
+        <div class="mock-logo">Drop<span>Sites</span></div>
+        <div class="mock-ws">
+          <div class="mock-ws-dot"></div>
+          <div class="mock-ws-name">My Workspace</div>
+          <div class="mock-ws-badge">Pro</div>
+        </div>
+        <div class="mock-nav-label">Main</div>
+        <div class="mock-nav-item active">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 4h10M2 7h7M2 10h8"/></svg>
+          Deployments
+        </div>
+        <div class="mock-nav-item">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 2v10M3 6l4-4 4 4"/><path d="M1 12h12"/></svg>
+          Upload
+        </div>
+        <div class="mock-nav-item">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 10l3-4 3 3 2-3 3 4H2z"/></svg>
+          Analytics
+        </div>
+        <div class="mock-nav-label">Workspace</div>
+        <div class="mock-nav-item">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="5" cy="5" r="2.5"/><path d="M1 12c0-2.2 1.8-4 4-4"/><circle cx="10" cy="7" r="2"/><path d="M8 11.5c0-1.5.9-2.5 2-2.5"/></svg>
+          Members
+        </div>
+        <div class="mock-user">
+          <div class="mock-avatar">EB</div>
+          <div><div class="mock-uname">Esteban</div><div class="mock-uplan">Pro · trial</div></div>
+        </div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-topbar">
+          <span class="mock-title">Deployments</span>
+          <div class="mock-search">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="6" r="4"/><path d="M10 10l2 2"/></svg>
+            Search…
+            <span class="mock-search-kbd">⌘K</span>
+          </div>
+          <div class="mock-new-btn">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v10M2 7h10"/></svg>
+            New
+          </div>
+        </div>
+        <div class="mock-content">
+          <div class="mock-usage">
+            <div class="mock-chip"><div class="mock-chip-label">Storage</div><div class="mock-track"><div class="mock-fill" style="width:34%;background:#16a34a"></div></div><div class="mock-val">34/100MB</div></div>
+            <div class="mock-chip"><div class="mock-chip-label">Deploys</div><div class="mock-track"><div class="mock-fill" style="width:60%;background:#d97706"></div></div><div class="mock-val">3/5</div></div>
+            <div class="mock-chip"><div class="mock-chip-label">Bandwidth</div><div class="mock-track"><div class="mock-fill" style="width:12%;background:#16a34a"></div></div><div class="mock-val">0.6/5GB</div></div>
+          </div>
+          <div class="mock-table-wrap">
+            <div class="mock-table-hd"><div>Deployment</div><div>URL</div><div>Views</div><div>Updated</div><div>Status</div></div>
+            <div class="mock-row"><div><div class="mock-row-name">CFXP Sprint 14 Retro</div><div class="mock-row-slug">cfxp-sprint-14-retro</div></div><div class="mock-cell" style="font-size:9px;">dropsites.app/cfxp…</div><div class="mock-cell">2,841</div><div class="mock-cell" style="color:#a1a1aa;">2h ago</div><div><span class="mock-badge mb-live"><span class="mock-badge-dot"></span>live</span></div></div>
+            <div class="mock-row"><div><div class="mock-row-name">Q1 Delivery Dashboard</div><div class="mock-row-slug">q1-delivery-dashboard</div></div><div class="mock-cell" style="font-size:9px;">dropsites.app/q1-d…</div><div class="mock-cell">489</div><div class="mock-cell" style="color:#a1a1aa;">1d ago</div><div><span class="mock-badge mb-locked">🔒 locked</span></div></div>
+            <div class="mock-row"><div><div class="mock-row-name">Apollo Proposal v3</div><div class="mock-row-slug">apollo-proposal-v3</div></div><div class="mock-cell" style="font-size:9px;">dropsites.app/apol…</div><div class="mock-cell">122</div><div class="mock-cell" style="color:#a1a1aa;">3d ago</div><div><span class="mock-badge mb-warn">expiring</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HOW IT WORKS ─────────────────────────────────────────────── -->
+<section class="section section-center" id="how">
+  <div class="section-eyebrow">How it works</div>
+  <h2 class="section-h2">From file to live link.<br>Three steps.</h2>
+  <p class="section-sub">No configuration. No servers. No deployment pipelines. Just drop and share.</p>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-num">01</div>
+      <div class="how-title">Drop your file</div>
+      <div class="how-body">Drag a single HTML file, a ZIP archive, a React build, a PDF, or any static format onto the upload zone. Or use the API, CLI, or Claude MCP connector.</div>
+      <div class="how-connector">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10h12M12 5l5 5-5 5"/></svg>
+      </div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">02</div>
+      <div class="how-title">Get a permanent link</div>
+      <div class="how-body">DropSites processes your file and returns a stable, shareable URL in under 60 seconds. Custom slugs, namespaces, and custom domains are supported.</div>
+      <div class="how-connector">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10h12M12 5l5 5-5 5"/></svg>
+      </div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">03</div>
+      <div class="how-title">Share anything</div>
+      <div class="how-body">Copy the link, embed it, send a QR code, generate per-recipient tracking tokens, or set a password. Your file is served globally via Cloudflare CDN.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── USE CASES ─────────────────────────────────────────────────── -->
+<div class="usecases">
+<section class="section section-center">
+  <div class="section-eyebrow">Use cases</div>
+  <h2 class="section-h2">Built for every kind of publisher</h2>
+  <div class="usecase-tabs">
+    <button class="uc-tab active" onclick="showUC('ai')">AI Power Users</button>
+    <button class="uc-tab" onclick="showUC('consulting')">Consultants</button>
+    <button class="uc-tab" onclick="showUC('dev')">Developers</button>
+    <button class="uc-tab" onclick="showUC('ent')">Enterprise</button>
+  </div>
+
+  <div id="uc-ai" class="uc-panel active">
+    <div>
+      <div class="uc-label">AI Power Users</div>
+      <h3 class="uc-h3">Your Claude outputs deserve a real home</h3>
+      <p class="uc-body">You build dashboards, reports, and interactive tools in seconds with Claude or ChatGPT. DropSites closes the last mile — turn that HTML output into a permanent, shareable link without leaving your workflow.</p>
+      <ul class="uc-bullets">
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Drop Claude-generated HTML and get a link instantly</li>
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Phase 3 Claude MCP connector — publish without leaving the chat</li>
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>React builds, data visualisations, WASM — all supported</li>
+      </ul>
+    </div>
+    <div class="uc-visual">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></div>
+        <span style="font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;">Claude chat</span>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text-2);line-height:1.6;margin-bottom:10px;">
+        <span style="color:var(--text-3);font-size:10px;display:block;margin-bottom:4px;">Claude</span>
+        Here's your Q1 dashboard. I've published it to DropSites — your link is ready:
+      </div>
+      <div style="background:var(--accent-s);border:1px solid rgba(249,115,22,.2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="1.5" style="width:18px;height:18px;flex-shrink:0;"><path d="M8 1a7 7 0 100 14A7 7 0 008 1z"/><path d="M5 8l2 2 4-4"/></svg>
+        <div>
+          <div style="font-size:11px;font-weight:500;color:var(--accent);">Live now</div>
+          <div style="font-size:12px;font-family:var(--mono);color:var(--text-2);">dropsites.app/q1-dashboard-2026</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="uc-consulting" class="uc-panel">
+    <div>
+      <div class="uc-label">Consultants & Delivery Teams</div>
+      <h3 class="uc-h3">Client deliverables that actually impress</h3>
+      <p class="uc-body">Stop sending PDF attachments that nobody opens. Publish sprint retrospectives, dashboards, and proposals as live interactive sites — with a stable link you can share in any message or email.</p>
+      <ul class="uc-bullets">
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Password-protect sensitive client deliverables</li>
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Know exactly when your proposal was opened (per-recipient tracking)</li>
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Workspace namespaces keep all client work organised</li>
+      </ul>
+    </div>
+    <div class="uc-visual">
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:12px;">Notification</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg viewBox="0 0 16 16" fill="none" stroke="var(--green)" stroke-width="1.5" style="width:16px;height:16px;"><path d="M1 6s2-4 7-4 7 4 7 4-2 4-7 4-7-4-7-4z"/><circle cx="8" cy="6" r="2"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--text-1);margin-bottom:2px;">Alice just opened your proposal</div>
+          <div style="font-size:12px;color:var(--text-3);">Apollo Proposal v3 · 2 minutes ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="uc-dev" class="uc-panel">
+    <div>
+      <div class="uc-label">Developers & Engineers</div>
+      <h3 class="uc-h3">Publish from anywhere in your workflow</h3>
+      <p class="uc-body">A full REST API, official CLI, and GitHub Actions action let you deploy static builds from any pipeline. Zero config. Webhook support. API keys with rate limiting built in.</p>
+      <ul class="uc-bullets">
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div><code style="font-family:var(--mono);font-size:12px;background:var(--bg);padding:1px 5px;border-radius:3px;">dropsites deploy ./dist</code> — done</li>
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>GitHub Actions action for deploy-on-push</li>
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>JS and Python SDKs · Webhooks · OpenAPI spec</li>
+      </ul>
+    </div>
+    <div class="uc-visual">
+      <div style="font-size:10px;font-family:var(--mono);color:var(--text-3);margin-bottom:6px;">terminal</div>
+      <div style="background:#0f0f0f;border-radius:8px;padding:14px;font-family:var(--mono);font-size:12px;line-height:1.8;">
+        <div style="color:#555;">$ dropsites deploy ./dist --slug q1-dashboard</div>
+        <div style="color:#a1a1aa;">  Uploading 3 files (2.4 MB)…</div>
+        <div style="color:#a1a1aa;">  Processing…</div>
+        <div style="color:#4ade80;">  ✓ Live in 2.8s</div>
+        <div style="color:#f97316;">  → dropsites.app/q1-dashboard</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="uc-ent" class="uc-panel">
+    <div>
+      <div class="uc-label">Enterprise & IT Teams</div>
+      <h3 class="uc-h3">Self-hosted, your branding, your infrastructure</h3>
+      <p class="uc-body">Deploy DropSites entirely on your own infrastructure. Bring your own SSO, storage, and domain. Apply your brand via a single JSON token file. Full audit logs, RLS permissions, and air-gapped licence validation.</p>
+      <ul class="uc-bullets">
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Docker image · Helm chart · Terraform for GCP, AWS, Azure</li>
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>OIDC / SAML SSO · Audit logs · Data residency (US or EU)</li>
+        <li><div class="uc-check"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>White-label: custom brand, logo, domain, colours</li>
+      </ul>
+    </div>
+    <div class="uc-visual">
+      <div style="font-size:10px;font-family:var(--mono);color:var(--text-3);margin-bottom:8px;">theme.json</div>
+      <div style="background:#0f0f0f;border-radius:8px;padding:14px;font-family:var(--mono);font-size:11px;line-height:1.9;color:#888;">
+        <div><span style="color:#555;">{</span></div>
+        <div>&nbsp;&nbsp;<span style="color:#7dd3fc;">"brand"</span><span style="color:#555;">: {</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7dd3fc;">"name"</span><span style="color:#555;">:</span> <span style="color:#86efac;">"Acme Corp"</span><span style="color:#555;">,</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7dd3fc;">"logo_url"</span><span style="color:#555;">:</span> <span style="color:#86efac;">"https://acme.com/logo.svg"</span></div>
+        <div>&nbsp;&nbsp;<span style="color:#555;">},</span></div>
+        <div>&nbsp;&nbsp;<span style="color:#7dd3fc;">"tokens"</span><span style="color:#555;">: {</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7dd3fc;">"color-accent"</span><span style="color:#555;">:</span> <span style="color:#f97316;">"#0052cc"</span><span style="color:#555;">,</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7dd3fc;">"font-sans"</span><span style="color:#555;">:</span> <span style="color:#86efac;">"'Helvetica Neue'"</span></div>
+        <div>&nbsp;&nbsp;<span style="color:#555;">}</span></div>
+        <div><span style="color:#555;">}</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ── FEATURES ─────────────────────────────────────────────────── -->
+<section class="section section-center" id="features">
+  <div class="section-eyebrow">Features</div>
+  <h2 class="section-h2">Everything a static file deserves</h2>
+  <p class="section-sub">Every feature ships in Phase 1. Nothing locked behind enterprise gates unless noted.</p>
+  <div class="features-grid">
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2v12M4 7l5-5 5 5"/><path d="M2 16h14"/></svg></div>
+      <div class="feat-title">Any static format</div>
+      <div class="feat-body">HTML, ZIP, React builds, JS, PDF, WASM, images. If a browser can render it, DropSites can serve it.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 11a6 6 0 11-9.9-4.5"/><path d="M12 2v4h4"/></svg></div>
+      <div class="feat-title">Instant overwrite</div>
+      <div class="feat-body">Re-upload to any existing slug. The URL never changes. Anyone with the link sees the updated version immediately.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="12" height="8" rx="1.5"/><path d="M6 7V6a3 3 0 016 0v1"/></svg></div>
+      <div class="feat-title">Password protection</div>
+      <div class="feat-body">Lock any deployment behind a password. Brute-force rate limiting built in. Toggle on or off from the dashboard row.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="9" cy="8" r="2"/></svg></div>
+      <div class="feat-title">Per-recipient tracking</div>
+      <div class="feat-body">Generate named access tokens for each recipient. Know exactly when Alice opened your proposal — not just total view counts.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L2 7v9h5v-5h4v5h5V7z"/></svg></div>
+      <div class="feat-title">Workspace model</div>
+      <div class="feat-body">Deployments belong to workspaces — not individuals. Shared namespaces, role-based access, team billing. Members come and go; links stay.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h12v12H3z"/><path d="M3 7h12M7 7v8"/></svg></div>
+      <div class="feat-title">In-browser editor</div>
+      <div class="feat-body">Edit any file in your deployment directly in the browser. Save and publish in one click — change is live immediately, no re-upload required.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="7"/><path d="M9 5v4.5l3 1.5"/></svg></div>
+      <div class="feat-title">Link expiry</div>
+      <div class="feat-body">Set an expiry date on any deployment. Expired links show a branded page. Reactivate in one click — files are never deleted on expiry.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 1v4M9 13v4M1 9h4M13 9h4"/><circle cx="9" cy="9" r="3"/></svg></div>
+      <div class="feat-title">Zero egress costs</div>
+      <div class="feat-body">Built on Cloudflare R2 and CDN. No egress fees at any scale. 15x cheaper than S3 at 100k users. Cost advantage is structural, not a promo.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="14" height="14" rx="2"/><path d="M5 9h8M5 6h5M5 12h6"/></svg></div>
+      <div class="feat-title">Full REST API + CLI</div>
+      <div class="feat-body">Headless publishing from any script, CI pipeline, or AI agent. Official JS and Python SDKs. GitHub Actions action. Webhooks with HMAC signing.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ─────────────────────────────────────────────────── -->
+<section class="section section-center" id="pricing" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);max-width:100%;padding-left:clamp(20px,5vw,64px);padding-right:clamp(20px,5vw,64px);">
+<div style="max-width:1100px;margin:0 auto;">
+  <div class="section-eyebrow">Pricing</div>
+  <h2 class="section-h2">Start free. Scale when you need to.</h2>
+  <p class="section-sub" style="margin-bottom:48px;">All tiers include the full feature set. Limits increase as you grow. No feature gating.</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-tier">Free</div>
+      <div class="price-amount">$0<span> / month</span></div>
+      <div class="price-desc">For individuals getting started. No credit card required.</div>
+      <hr class="price-divider">
+      <ul class="price-features">
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>5 deployments</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>25 MB per deployment</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>5 GB bandwidth / month</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>All core features</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>14-day Pro trial on signup</li>
+      </ul>
+      <a href="#" class="price-cta price-cta-free">Start free</a>
+    </div>
+    <div class="price-card featured">
+      <div class="price-popular">Most popular</div>
+      <div class="price-tier">Pro</div>
+      <div class="price-amount">$9<span> / month</span></div>
+      <div class="price-desc">For professionals who publish regularly.</div>
+      <hr class="price-divider">
+      <ul class="price-features">
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>50 deployments</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>100 MB per deployment</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>50 GB bandwidth / month</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Custom domains</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Remove DropSites badge</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Priority support</li>
+      </ul>
+      <a href="#" class="price-cta price-cta-pro">Start Pro trial free</a>
+    </div>
+    <div class="price-card">
+      <div class="price-tier">Team</div>
+      <div class="price-amount">$29<span> / month</span></div>
+      <div class="price-desc">For teams sharing work with clients and stakeholders.</div>
+      <hr class="price-divider">
+      <ul class="price-features">
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>200 deployments</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>500 MB per deployment</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>200 GB bandwidth / month</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Per-recipient tracking tokens</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Webhooks · API access · SDKs</li>
+        <li><div class="price-feat-icon"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5l2.5 2.5 5-5"/></svg></div>Workspace SSO</li>
+      </ul>
+      <a href="#" class="price-cta price-cta-ent">Start Team trial</a>
+    </div>
+  </div>
+  <p style="font-size:13px;color:var(--text-3);margin-top:24px;text-align:center;">
+    Need unlimited scale with your own infrastructure? <a href="#enterprise" style="color:var(--accent);text-decoration:none;font-weight:500;">See Enterprise →</a>
+  </p>
+</div>
+</section>
+
+<!-- ── ENTERPRISE ─────────────────────────────────────────────── -->
+<div class="enterprise-section" id="enterprise">
+  <div class="enterprise-inner">
+    <div>
+      <div class="ent-eyebrow">Enterprise</div>
+      <h2 class="ent-h2">Your infrastructure.<br>Your brand.<br>Your data.</h2>
+      <p class="ent-body">Self-host DropSites on your own cloud account or on-premise servers. Apply your brand with a single JSON file. Full audit logs, OIDC/SAML SSO, and air-gapped licence validation included.</p>
+      <ul class="ent-features">
+        <li><div class="ent-feat-dot"></div>Deploy on GCP, AWS, Azure, or bare metal — Helm chart and Terraform modules included</li>
+        <li><div class="ent-feat-dot"></div>White-label: your logo, your domain, your colour scheme</li>
+        <li><div class="ent-feat-dot"></div>OIDC, SAML, Okta, Azure AD — SSO for all your users</li>
+        <li><div class="ent-feat-dot"></div>Data residency: US or EU storage region selection</li>
+        <li><div class="ent-feat-dot"></div>Unlimited deployments, unlimited bandwidth, unlimited storage</li>
+        <li><div class="ent-feat-dot"></div>Dedicated support SLA · Annual contract</li>
+      </ul>
+      <div class="ent-ctas">
+        <a href="#" class="btn btn-white">Book a demo</a>
+        <a href="#" class="btn btn-ghost-white">Read the docs</a>
+      </div>
+    </div>
+    <div class="ent-visual">
+      <div class="ent-vis-header">theme.json — enterprise token override</div>
+      <hr class="ent-divider">
+      <div class="ent-token-row">
+        <div class="ent-token-dot" style="background:#0052cc;"></div>
+        <div class="ent-token-key">color-accent</div>
+        <div class="ent-token-val ent-token-changed">"#0052cc"</div>
+      </div>
+      <div class="ent-token-row">
+        <div class="ent-token-dot" style="background:#f8f9fc;"></div>
+        <div class="ent-token-key">color-bg-primary</div>
+        <div class="ent-token-val ent-token-changed">"#f8f9fc"</div>
+      </div>
+      <div class="ent-token-row">
+        <div class="ent-token-key" style="padding-left:24px;">font-sans</div>
+        <div class="ent-token-val ent-token-changed">"Helvetica Neue"</div>
+      </div>
+      <div class="ent-token-row">
+        <div class="ent-token-key" style="padding-left:24px;">border-radius-md</div>
+        <div class="ent-token-val ent-token-changed">"3px"</div>
+      </div>
+      <hr class="ent-divider">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#4ade80;"></div>
+        <div style="font-size:11px;font-family:var(--mono);color:#888;">Theme applied · All 247 checks passed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TESTIMONIALS ────────────────────────────────────────────── -->
+<section class="section section-center">
+  <div class="section-eyebrow">Early feedback</div>
+  <h2 class="section-h2">What people are saying</h2>
+  <p class="section-sub" style="margin-bottom:48px;">From our early access cohort.</p>
+  <div class="testi-grid">
+    <div class="testi-card">
+      <div class="testi-stars">
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+      </div>
+      <div class="testi-quote">"I generate HTML reports with Claude every day. DropSites is the missing piece — I used to copy-paste raw code into Notion just to share it. Now I drop it and send a link. Done."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:#7c3aed;">ML</div>
+        <div><div class="testi-name">Maya L.</div><div class="testi-role">AI Product Consultant</div></div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+      </div>
+      <div class="testi-quote">"Our sprint retrospectives are now live HTML pages with charts and animations. Clients actually read them now. The per-recipient token feature is genuinely clever — I know who's opened what."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:#0369a1;">JP</div>
+        <div><div class="testi-name">James P.</div><div class="testi-role">Delivery Lead, consulting firm</div></div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.3l-3.7 1.9.7-4.1-3-2.9 4.2-.7z"/></svg>
+      </div>
+      <div class="testi-quote">"Self-hosted in 20 minutes with the Docker image. Applied our brand token file and it was unrecognisably ours. The fact it runs on Cloudflare R2 means our CDN costs are basically zero."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:#15803d;">SR</div>
+        <div><div class="testi-name">Sarah R.</div><div class="testi-role">Platform Engineering Lead</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FINAL CTA ────────────────────────────────────────────────── -->
+<div class="final-cta">
+  <h2>Your next deliverable should be a link.</h2>
+  <p>Start free in under 60 seconds. No credit card. No configuration. Just drop and share.</p>
+  <div class="hero-ctas">
+    <a href="#" class="btn btn-primary-lg">
+      Start free now
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+    </a>
+    <a href="#enterprise" class="btn btn-ghost-lg">Talk to enterprise sales</a>
+  </div>
+  <p class="final-cta-note">Free tier · 14-day Pro trial on signup · No credit card required</p>
+</div>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-brand">
+    <div class="footer-logo">Drop<span>Sites</span></div>
+    <div class="footer-tagline">The last mile for AI-generated HTML and static deliverables.</div>
+  </div>
+  <div class="footer-col">
+    <h4>Product</h4>
+    <ul>
+      <li><a href="#">Features</a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#">Changelog</a></li>
+      <li><a href="#">Roadmap</a></li>
+      <li><a href="#">Status</a></li>
+    </ul>
+  </div>
+  <div class="footer-col">
+    <h4>Developers</h4>
+    <ul>
+      <li><a href="#">Documentation</a></li>
+      <li><a href="#">API reference</a></li>
+      <li><a href="#">CLI</a></li>
+      <li><a href="#">GitHub Actions</a></li>
+      <li><a href="#">SDKs</a></li>
+    </ul>
+  </div>
+  <div class="footer-col">
+    <h4>Company</h4>
+    <ul>
+      <li><a href="#">About</a></li>
+      <li><a href="#">Enterprise</a></li>
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Terms</a></li>
+      <li><a href="#">Security</a></li>
+    </ul>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <p>© 2026 DropSites. All rights reserved.</p>
+  <p>dropsites.app</p>
+</div>
+
+<script>
+function showUC(id) {
+  document.querySelectorAll('.uc-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.uc-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('uc-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
