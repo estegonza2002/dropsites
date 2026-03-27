@@ -1,0 +1,4 @@
+npx tsc --noEmit
+npx tsx scripts/validate-design-tokens.ts
+npx tsx scripts/validate-docs.ts
+npx lint-staged
