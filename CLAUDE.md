@@ -112,6 +112,7 @@ _Update this line at the start of each new milestone session._
 8. **Run the design system verification checklist** (in [`docs/design/design-system.md`](docs/design/design-system.md) Section 8) before marking any UI milestone complete.
 9. **Every PR must pass:** unit tests, integration tests, E2E tests, axe accessibility scan, `npm audit` zero critical.
 10. **After any UI change,** verify at 375px and 1280px viewport widths.
+11. **After marking any session complete in PROGRESS.md,** commit and push to remote — do not leave completed work unpushed.
 
 ## Enforcement
 

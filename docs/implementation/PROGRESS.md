@@ -28,8 +28,8 @@ depends_on:
 - [x] **S03** — Health endpoint, Sentry, env validation, root layout, marketing shell — 2026-03-27
 
 ### M1.2 — Upload + Serving
-- [ ] **S04** — S3 storage client + abstraction factory
-- [ ] **S05** — MIME mapping, file validation, ZIP extraction, entry point detection
+- [x] **S04** — S3 storage client + abstraction factory — 2026-03-27
+- [x] **S05** — MIME mapping, file validation, ZIP extraction, entry point detection — 2026-03-27
 - [ ] **S06** — Slug generation + validation + reserved words
 - [ ] **S07** — Upload API route + processing pipeline
 - [ ] **S08** — Serving middleware (slug resolve, R2 fetch, MIME headers, 404)
