@@ -96,7 +96,7 @@ Key tables (full schema created during M1.1):
 
 ## Current Milestone
 
-**M1.5** — Dashboard. M1.4 complete (S12–S14). Next: S15 (dashboard layout, sidebar, top-nav, workspace selector).
+**M1.5** — Dashboard in progress. S15 complete. Next: S16 (deployment table, search, detail page).
 
 _Update this line at the start of each new milestone session._
 

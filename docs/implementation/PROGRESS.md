@@ -45,7 +45,7 @@ depends_on:
 - [x] **S14** — Session management (list, terminate, re-auth gate) — 2026-03-27
 
 ### M1.5 — Dashboard
-- [ ] **S15** — Dashboard layout (sidebar, top-nav, workspace selector)
+- [x] **S15** — Dashboard layout (sidebar, top-nav, workspace selector) — 2026-03-27
 - [ ] **S16** — Deployment table (list, sort, search, filter, badges, detail page)
 - [ ] **S17** — Row actions (lock, update, duplicate, rename, delete, bulk delete, disable/reactivate)
 - [ ] **S18** — Workspace management (create, settings, members, roles, invitations)
