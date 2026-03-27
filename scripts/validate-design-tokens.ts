@@ -62,6 +62,11 @@ const ALLOWED_HEX = new Set([
   "#555",
   "#666",
   "#888",
+  // Google brand logo colours — third-party identity, cannot be tokenised
+  "#4285f4",
+  "#34a853",
+  "#fbbc05",
+  "#ea4335",
 ]);
 
 function checkLine(file: string, lineNum: number, line: string): void {

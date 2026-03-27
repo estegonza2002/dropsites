@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveDeployment, resolveFile } from '@/lib/serving/resolve'
 import { getServingHeaders } from '@/lib/serving/headers'
+import { createMiddlewareClient } from '@/lib/supabase/middleware'
 
 // Paths handled by the App Router — pass straight through
 const PLATFORM_PREFIXES = new Set([
@@ -34,6 +35,31 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   // Root path — pass through
   if (pathname === '/') return NextResponse.next()
+
+  // ── Auth guard ────────────────────────────────────────────────────
+  // Must refresh the session on every request so cookies stay valid.
+  if (pathname.startsWith('/dashboard')) {
+    const response = NextResponse.next()
+    const supabase = createMiddlewareClient(request, response)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('next', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+    return response
+  }
+
+  // Redirect authenticated users away from login/signup
+  if (pathname === '/login' || pathname === '/signup') {
+    const response = NextResponse.next()
+    const supabase = createMiddlewareClient(request, response)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return response
+  }
 
   const segments = pathname.split('/').filter(Boolean)
   const firstSegment = segments[0]
