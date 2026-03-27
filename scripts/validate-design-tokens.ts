@@ -33,7 +33,7 @@ const SKIP_PATTERNS = [
   "primitives.css",
   "tokens.css",
   "components/marketing/", // marketing page predates token system — will be migrated
-  "app/page.tsx", // marketing landing page — will be migrated to token system
+  "app/(marketing)/page.tsx", // marketing landing page — will be migrated to token system
 ];
 
 interface Violation {

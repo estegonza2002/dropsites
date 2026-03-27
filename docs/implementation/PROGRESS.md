@@ -23,9 +23,9 @@ depends_on:
 ## Phase 1
 
 ### M1.1 — Foundation
-- [ ] **S01** — Project init (Next.js 15, Tailwind v4, shadcn, Geist, ESLint, Prettier, Vitest, Playwright)
-- [ ] **S02** — Supabase schema (all migration SQL files, docker-compose, Dockerfile)
-- [ ] **S03** — Health endpoint, Sentry, env validation, root layout, marketing shell
+- [x] **S01** — Project init (Next.js 15, Tailwind v4, shadcn, Geist, ESLint, Prettier, Vitest, Playwright) — 2026-03-27
+- [x] **S02** — Supabase schema (all migration SQL files, docker-compose, Dockerfile) — 2026-03-27
+- [x] **S03** — Health endpoint, Sentry, env validation, root layout, marketing shell — 2026-03-27
 
 ### M1.2 — Upload + Serving
 - [ ] **S04** — S3 storage client + abstraction factory
