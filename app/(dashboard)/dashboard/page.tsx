@@ -1,13 +1,48 @@
 import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { UploadZone } from '@/components/upload/upload-zone'
+import { DeploymentTable } from '@/components/deployments/deployment-table'
+import type { DeploymentListItem } from '@/components/deployments/deployment-table'
 
 export const metadata: Metadata = {
   title: 'Dashboard — DropSites',
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  let deployments: DeploymentListItem[] = []
+
+  if (user) {
+    const admin = createAdminClient()
+
+    const { data: memberships } = await admin
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+
+    const workspaceIds = (memberships ?? []).map((m) => m.workspace_id)
+
+    if (workspaceIds.length > 0) {
+      const { data } = await admin
+        .from('deployments')
+        .select(
+          'id, slug, namespace, workspace_id, entry_path, file_count, storage_bytes, password_hash, is_disabled, is_admin_disabled, health_status, expires_at, total_views, created_at'
+        )
+        .in('workspace_id', workspaceIds)
+        .is('archived_at', null)
+        .order('created_at', { ascending: false })
+
+      deployments = (data ?? []) as DeploymentListItem[]
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 space-y-8">
+    <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
       <div>
         <h1 className="text-lg font-medium">Your Deployments</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -17,13 +52,7 @@ export default function DashboardPage() {
 
       <UploadZone showSlugInput />
 
-      {/* Deployment list placeholder — populated in S16 */}
-      <div className="rounded-lg border bg-muted/30 py-12 text-center">
-        <p className="text-sm text-muted-foreground">No deployments yet.</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Upload a file above to get your first shareable link.
-        </p>
-      </div>
+      <DeploymentTable deployments={deployments} />
     </div>
   )
 }

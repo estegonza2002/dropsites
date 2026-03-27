@@ -18,6 +18,21 @@
   --color-success:         oklch(0.55 0.18 145);  /* ~green-600 */
   --color-success-subtle:  oklch(0.96 0.05 145);  /* ~green-50 */
   --color-success-muted:   oklch(0.92 0.08 145);  /* ~green-100 */
+
+  /* ── Warning (amber) ─────────────────────────────────────────── */
+  --color-warning:         oklch(0.66 0.17 75);   /* ~amber-500 */
+  --color-warning-subtle:  oklch(0.97 0.04 75);   /* ~amber-50 */
+  --color-warning-muted:   oklch(0.92 0.08 75);   /* ~amber-100 */
+
+  /* ── Danger (red) ────────────────────────────────────────────── */
+  --color-danger:          oklch(0.63 0.22 27);   /* ~red-600 */
+  --color-danger-subtle:   oklch(0.97 0.04 27);   /* ~red-50 */
+  --color-danger-muted:    oklch(0.92 0.08 27);   /* ~red-100 */
+
+  /* ── Expiring (orange, distinct from accent) ─────────────────── */
+  --color-expiring:        oklch(0.70 0.16 50);   /* ~orange-400 */
+  --color-expiring-subtle: oklch(0.97 0.03 50);   /* ~orange-50 */
+  --color-expiring-muted:  oklch(0.93 0.06 50);   /* ~orange-100 */
 }
 
 .dark {
@@ -29,4 +44,16 @@
   --color-success:         oklch(0.72 0.18 145);
   --color-success-subtle:  oklch(0.22 0.05 145);
   --color-success-muted:   oklch(0.26 0.08 145);
+
+  --color-warning:         oklch(0.80 0.16 75);
+  --color-warning-subtle:  oklch(0.22 0.04 75);
+  --color-warning-muted:   oklch(0.26 0.08 75);
+
+  --color-danger:          oklch(0.72 0.20 27);
+  --color-danger-subtle:   oklch(0.22 0.04 27);
+  --color-danger-muted:    oklch(0.26 0.08 27);
+
+  --color-expiring:        oklch(0.78 0.14 50);
+  --color-expiring-subtle: oklch(0.23 0.04 50);
+  --color-expiring-muted:  oklch(0.28 0.07 50);
 }

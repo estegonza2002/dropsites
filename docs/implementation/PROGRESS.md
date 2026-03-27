@@ -46,7 +46,7 @@ depends_on:
 
 ### M1.5 — Dashboard
 - [x] **S15** — Dashboard layout (sidebar, top-nav, workspace selector) — 2026-03-27
-- [ ] **S16** — Deployment table (list, sort, search, filter, badges, detail page)
+- [x] **S16** — Deployment table (list, sort, search, filter, badges, detail page) — 2026-03-27
 - [ ] **S17** — Row actions (lock, update, duplicate, rename, delete, bulk delete, disable/reactivate)
 - [ ] **S18** — Workspace management (create, settings, members, roles, invitations)
 - [ ] **S19** — RLS policies + permission checks across all routes
