@@ -37,7 +37,7 @@ depends_on:
 
 ### M1.3 — Limits
 - [x] **S10** — Limit profile system (DB, getProfile, assignProfile, pre-upload checks) — 2026-03-27
-- [ ] **S11** — Limit enforcement UX (quota display, disabled states, error messages)
+- [x] **S11** — Limit enforcement UX (quota display, disabled states, error messages) — 2026-03-27
 
 ### M1.4 — Authentication
 - [ ] **S12** — Supabase Auth setup, login/signup pages, OAuth callbacks, middleware guard

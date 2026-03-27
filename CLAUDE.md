@@ -96,7 +96,7 @@ Key tables (full schema created during M1.1):
 
 ## Current Milestone
 
-**M1.1** — Foundation. Marketing page deployed to Vercel. Next: Docker setup, Supabase schema, health endpoint.
+**M1.3** — Limits complete (S10, S11). Next: M1.4 Authentication — S12 (Supabase Auth setup, login/signup pages, OAuth callbacks).
 
 _Update this line at the start of each new milestone session._
 

@@ -24,9 +24,16 @@ const ACCEPTED_MIME = ['text/html', 'application/zip', 'application/x-zip-compre
 interface UploadZoneProps {
   baseUrl?: string
   showSlugInput?: boolean
+  disabled?: boolean
+  disabledMessage?: string
 }
 
-export function UploadZone({ baseUrl = '', showSlugInput = true }: UploadZoneProps) {
+export function UploadZone({
+  baseUrl = '',
+  showSlugInput = true,
+  disabled = false,
+  disabledMessage = 'Storage full. Upgrade or delete deployments.',
+}: UploadZoneProps) {
   const [state, setState] = useState<UploadState>('idle')
   const [percent, setPercent] = useState(0)
   const [filename, setFilename] = useState('')
@@ -38,6 +45,7 @@ export function UploadZone({ baseUrl = '', showSlugInput = true }: UploadZonePro
 
   const upload = useCallback(
     (file: File) => {
+      if (disabled) return
       if (!ACCEPTED_MIME.includes(file.type) && !ACCEPTED_TYPES.some((ext) => file.name.endsWith(ext))) {
         toast.error('Only .html, .htm, and .zip files are supported')
         return
@@ -95,7 +103,7 @@ export function UploadZone({ baseUrl = '', showSlugInput = true }: UploadZonePro
       xhr.open('POST', '/api/v1/deployments')
       xhr.send(formData)
     },
-    [customSlug],
+    [customSlug, disabled],
   )
 
   function handleCancel() {
@@ -114,7 +122,7 @@ export function UploadZone({ baseUrl = '', showSlugInput = true }: UploadZonePro
 
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault()
-    if (state === 'idle') setState('dragging')
+    if (!disabled && state === 'idle') setState('dragging')
   }
 
   function handleDragLeave(e: React.DragEvent) {
@@ -125,7 +133,7 @@ export function UploadZone({ baseUrl = '', showSlugInput = true }: UploadZonePro
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault()
-    if (state !== 'dragging') return
+    if (disabled || state !== 'dragging') return
     setState('idle')
     const file = e.dataTransfer.files[0]
     if (file) upload(file)
@@ -142,24 +150,28 @@ export function UploadZone({ baseUrl = '', showSlugInput = true }: UploadZonePro
     <div className="flex flex-col gap-3 w-full max-w-md">
       <div
         role="button"
-        tabIndex={state === 'idle' || state === 'dragging' ? 0 : -1}
+        tabIndex={!disabled && (state === 'idle' || state === 'dragging') ? 0 : -1}
         aria-label="Upload zone — drag and drop or click to browse"
+        aria-disabled={disabled}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => {
-          if (state === 'idle') inputRef.current?.click()
+          if (!disabled && state === 'idle') inputRef.current?.click()
         }}
         onKeyDown={(e) => {
-          if ((e.key === 'Enter' || e.key === ' ') && state === 'idle') inputRef.current?.click()
+          if ((e.key === 'Enter' || e.key === ' ') && !disabled && state === 'idle')
+            inputRef.current?.click()
         }}
         className={[
           'relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 transition-colors',
-          isDragging
-            ? 'border-[var(--color-accent)] bg-[var(--color-accent-subtle)]'
-            : state === 'idle'
-              ? 'border-border bg-muted/40 hover:border-muted-foreground/40 hover:bg-muted/60 cursor-pointer'
-              : 'border-border bg-muted/20',
+          disabled
+            ? 'border-border bg-muted/20 opacity-60 cursor-not-allowed'
+            : isDragging
+              ? 'border-[var(--color-accent)] bg-[var(--color-accent-subtle)]'
+              : state === 'idle'
+                ? 'border-border bg-muted/40 hover:border-muted-foreground/40 hover:bg-muted/60 cursor-pointer'
+                : 'border-border bg-muted/20',
         ].join(' ')}
       >
         <input
@@ -171,7 +183,16 @@ export function UploadZone({ baseUrl = '', showSlugInput = true }: UploadZonePro
           tabIndex={-1}
         />
 
-        {(state === 'idle' || state === 'dragging') && (
+        {disabled && (
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted text-muted-foreground">
+              <Upload size={20} strokeWidth={1.5} />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">{disabledMessage}</p>
+          </div>
+        )}
+
+        {!disabled && (state === 'idle' || state === 'dragging') && (
           <>
             <div
               className={[
@@ -190,20 +211,20 @@ export function UploadZone({ baseUrl = '', showSlugInput = true }: UploadZonePro
           </>
         )}
 
-        {state === 'uploading' && (
+        {!disabled && state === 'uploading' && (
           <UploadProgress filename={filename} percent={percent} onCancel={handleCancel} />
         )}
 
-        {state === 'success' && result && (
+        {!disabled && state === 'success' && result && (
           <UploadSuccess url={result.url} slug={result.slug} onReset={handleReset} />
         )}
 
-        {state === 'error' && (
+        {!disabled && state === 'error' && (
           <UploadError message={errorMessage} onRetry={handleReset} />
         )}
       </div>
 
-      {showSlugInput && (state === 'idle' || state === 'dragging') && (
+      {!disabled && showSlugInput && (state === 'idle' || state === 'dragging') && (
         <SlugInput value={customSlug} onChange={setCustomSlug} baseUrl={baseUrl} />
       )}
     </div>
