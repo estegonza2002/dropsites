@@ -42,7 +42,7 @@ depends_on:
 ### M1.4 — Authentication
 - [x] **S12** — Supabase Auth setup, login/signup pages, OAuth callbacks, middleware guard — 2026-03-27
 - [x] **S13** — Auto-provisioning, email verification, rate limits, TOS acceptance — 2026-03-27
-- [ ] **S14** — Session management (list, terminate, re-auth gate)
+- [x] **S14** — Session management (list, terminate, re-auth gate) — 2026-03-27
 
 ### M1.5 — Dashboard
 - [ ] **S15** — Dashboard layout (sidebar, top-nav, workspace selector)

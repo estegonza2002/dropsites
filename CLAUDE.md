@@ -96,7 +96,7 @@ Key tables (full schema created during M1.1):
 
 ## Current Milestone
 
-**M1.4** — Authentication in progress. S12–S13 complete. Next: S14 (session management, permissions, re-auth gate).
+**M1.5** — Dashboard. M1.4 complete (S12–S14). Next: S15 (dashboard layout, sidebar, top-nav, workspace selector).
 
 _Update this line at the start of each new milestone session._
 
