@@ -72,19 +72,42 @@ type ContentHashRow = {
 type UserRow = {
   id: string
   email: string
+  display_name: string | null
+  email_verified_at: string | null
+  phone_number: string | null
+  phone_verified_at: string | null
+  notification_prefs: Record<string, unknown>
+  referral_code: string | null
+  referred_by: string | null
+  tos_accepted_at: string | null
+  tos_version: string | null
+  onboarding_completed: boolean
+  frozen_at: string | null
+  suspended_at: string | null
   limit_profile: string
   created_at: string
   updated_at: string
+  deleted_at: string | null
 }
 
 type WorkspaceRow = {
   id: string
   name: string
-  namespace: string
+  namespace_slug: string | null
   owner_id: string
+  is_personal: boolean
   limit_profile: string
+  trial_started_at: string | null
+  trial_ends_at: string | null
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  data_region: string
+  white_label_config: Record<string, unknown> | null
+  sso_config: Record<string, unknown> | null
+  default_deployment_settings: Record<string, unknown>
   created_at: string
   updated_at: string
+  deleted_at: string | null
 }
 
 type AuditLogRow = {
@@ -137,13 +160,31 @@ export type Database = {
     Tables: {
       users: {
         Row: UserRow
-        Insert: Partial<UserRow> & { id: string; email: string }
+        Insert: {
+          id: string
+          email: string
+          display_name?: string | null
+          email_verified_at?: string | null
+          tos_accepted_at?: string | null
+          tos_version?: string | null
+          limit_profile?: string
+          notification_prefs?: Record<string, unknown>
+          onboarding_completed?: boolean
+        }
         Update: Partial<UserRow>
         Relationships: []
       }
       workspaces: {
         Row: WorkspaceRow
-        Insert: Partial<WorkspaceRow> & { name: string; owner_id: string }
+        Insert: {
+          name: string
+          owner_id: string
+          namespace_slug?: string | null
+          is_personal?: boolean
+          limit_profile?: string
+          trial_started_at?: string | null
+          trial_ends_at?: string | null
+        }
         Update: Partial<WorkspaceRow>
         Relationships: []
       }

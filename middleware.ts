@@ -47,6 +47,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       loginUrl.searchParams.set('next', pathname)
       return NextResponse.redirect(loginUrl)
     }
+    // Signal to the dashboard layout whether the user's email is unverified
+    if (!session.user.email_confirmed_at) {
+      response.headers.set('x-email-unverified', '1')
+    }
     return response
   }
 
