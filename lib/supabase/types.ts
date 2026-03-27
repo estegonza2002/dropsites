@@ -1,10 +1,198 @@
 // Auto-generated types will be placed here after running:
 // supabase gen types typescript --local > lib/supabase/types.ts
-// Placeholder until M1.1 DB is running locally.
+// Hand-authored stubs below — replace entirely once the DB is running locally.
+
+type DeploymentRow = {
+  id: string
+  slug: string
+  namespace: string | null
+  workspace_id: string
+  owner_id: string
+  entry_path: string
+  storage_bytes: number
+  file_count: number
+  password_hash: string | null
+  is_disabled: boolean
+  is_admin_disabled: boolean
+  classification: string
+  allow_indexing: boolean
+  auto_nav_enabled: boolean
+  current_version_id: string | null
+  health_status: string
+  health_details: Record<string, unknown> | null
+  health_checked_at: string | null
+  expires_at: string | null
+  dropsites_config: Record<string, unknown> | null
+  total_views: number
+  created_at: string
+  updated_at: string
+  archived_at: string | null
+  last_viewed_at: string | null
+}
+
+type DeploymentVersionRow = {
+  id: string
+  deployment_id: string
+  version_number: number
+  storage_path: string
+  storage_bytes: number
+  file_count: number
+  source: 'upload' | 'editor' | 'api'
+  published_by: string | null
+  created_at: string
+}
+
+type DeploymentFileRow = {
+  id: string
+  deployment_id: string
+  version_id: string
+  file_path: string
+  mime_type: string
+  size_bytes: number
+  sha256_hash: string
+  storage_key: string
+}
+
+type WorkspaceMemberRow = {
+  id: string
+  workspace_id: string
+  user_id: string
+  role: 'owner' | 'publisher' | 'viewer'
+  created_at: string
+}
+
+type ContentHashRow = {
+  sha256_hash: string
+  blocked: boolean
+  blocked_at: string | null
+  blocked_reason: string | null
+  first_seen_at: string
+}
+
+type UserRow = {
+  id: string
+  email: string
+  limit_profile: string
+  created_at: string
+  updated_at: string
+}
+
+type WorkspaceRow = {
+  id: string
+  name: string
+  namespace: string
+  owner_id: string
+  limit_profile: string
+  created_at: string
+  updated_at: string
+}
+
+type AuditLogRow = {
+  id: string
+  action: string
+  actor_id: string | null
+  target_id: string | null
+  target_type: string | null
+  details: Record<string, unknown> | null
+  created_at: string
+}
+
+type AnalyticsEventRow = {
+  id: string
+  deployment_id: string
+  created_at: string
+  referrer_domain: string | null
+  ua_class: string | null
+}
+
+type BandwidthDailyRow = {
+  id: string
+  deployment_id: string
+  date: string
+  bytes_served: number
+  request_count: number
+}
 
 export type Database = {
   public: {
-    Tables: Record<string, never>
+    Tables: {
+      users: {
+        Row: UserRow
+        Insert: Partial<UserRow> & { id: string; email: string }
+        Update: Partial<UserRow>
+        Relationships: []
+      }
+      workspaces: {
+        Row: WorkspaceRow
+        Insert: Partial<WorkspaceRow> & { name: string; owner_id: string }
+        Update: Partial<WorkspaceRow>
+        Relationships: []
+      }
+      workspace_members: {
+        Row: WorkspaceMemberRow
+        Insert: Omit<WorkspaceMemberRow, 'id' | 'created_at'>
+        Update: Partial<WorkspaceMemberRow>
+        Relationships: []
+      }
+      deployments: {
+        Row: DeploymentRow
+        Insert: {
+          slug: string
+          workspace_id: string
+          owner_id: string
+          entry_path: string
+          namespace?: string | null
+          storage_bytes?: number
+          file_count?: number
+          password_hash?: string | null
+          is_disabled?: boolean
+          is_admin_disabled?: boolean
+          classification?: string
+          allow_indexing?: boolean
+          auto_nav_enabled?: boolean
+          current_version_id?: string | null
+          expires_at?: string | null
+        }
+        Update: Partial<DeploymentRow>
+        Relationships: []
+      }
+      deployment_versions: {
+        Row: DeploymentVersionRow
+        Insert: Omit<DeploymentVersionRow, 'id' | 'created_at'>
+        Update: Partial<DeploymentVersionRow>
+        Relationships: []
+      }
+      deployment_files: {
+        Row: DeploymentFileRow
+        Insert: Omit<DeploymentFileRow, 'id'>
+        Update: Partial<DeploymentFileRow>
+        Relationships: []
+      }
+      content_hashes: {
+        Row: ContentHashRow
+        Insert: { sha256_hash: string; blocked?: boolean; blocked_reason?: string | null }
+        Update: Partial<ContentHashRow>
+        Relationships: []
+      }
+      analytics_events: {
+        Row: AnalyticsEventRow
+        Insert: Omit<AnalyticsEventRow, 'id' | 'created_at'>
+        Update: Partial<AnalyticsEventRow>
+        Relationships: []
+      }
+      audit_log: {
+        Row: AuditLogRow
+        Insert: Omit<AuditLogRow, 'id' | 'created_at'>
+        Update: never
+        Relationships: []
+      }
+      bandwidth_daily: {
+        Row: BandwidthDailyRow
+        Insert: Omit<BandwidthDailyRow, 'id'>
+        Update: Partial<BandwidthDailyRow>
+        Relationships: []
+      }
+    }
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: Record<string, never>

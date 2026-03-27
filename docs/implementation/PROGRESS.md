@@ -31,7 +31,7 @@ depends_on:
 - [x] **S04** — S3 storage client + abstraction factory — 2026-03-27
 - [x] **S05** — MIME mapping, file validation, ZIP extraction, entry point detection — 2026-03-27
 - [x] **S06** — Slug generation + validation + reserved words — 2026-03-27
-- [ ] **S07** — Upload API route + processing pipeline
+- [x] **S07** — Upload API route + processing pipeline — 2026-03-27
 - [ ] **S08** — Serving middleware (slug resolve, R2 fetch, MIME headers, 404)
 - [ ] **S09** — Upload UI (drag-drop zone, progress bar, success screen, slug input)
 
