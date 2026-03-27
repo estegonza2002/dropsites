@@ -40,7 +40,7 @@ depends_on:
 - [x] **S11** — Limit enforcement UX (quota display, disabled states, error messages) — 2026-03-27
 
 ### M1.4 — Authentication
-- [ ] **S12** — Supabase Auth setup, login/signup pages, OAuth callbacks, middleware guard
+- [x] **S12** — Supabase Auth setup, login/signup pages, OAuth callbacks, middleware guard — 2026-03-27
 - [ ] **S13** — Auto-provisioning, email verification, rate limits, TOS acceptance
 - [ ] **S14** — Session management (list, terminate, re-auth gate)
 

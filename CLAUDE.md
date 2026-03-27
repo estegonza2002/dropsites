@@ -96,7 +96,7 @@ Key tables (full schema created during M1.1):
 
 ## Current Milestone
 
-**M1.3** — Limits complete (S10, S11). Next: M1.4 Authentication — S12 (Supabase Auth setup, login/signup pages, OAuth callbacks).
+**M1.4** — Authentication in progress. S12 complete. Next: S13 (auto-provisioning, email verification, rate limits, TOS acceptance).
 
 _Update this line at the start of each new milestone session._
 
