@@ -260,7 +260,27 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      get_user_sessions: {
+        Args: { user_uuid: string }
+        Returns: Array<{
+          id: string
+          user_agent: string | null
+          ip: string | null
+          created_at: string
+          updated_at: string
+          not_after: string | null
+        }>
+      }
+      terminate_session: {
+        Args: { session_id: string }
+        Returns: undefined
+      }
+      terminate_other_sessions: {
+        Args: { user_uuid: string; keep_session_id: string }
+        Returns: undefined
+      }
+    }
     Enums: Record<string, never>
   }
 }
