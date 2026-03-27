@@ -96,7 +96,7 @@ Key tables (full schema created during M1.1):
 
 ## Current Milestone
 
-**M1.4** — Authentication in progress. S12 complete. Next: S13 (auto-provisioning, email verification, rate limits, TOS acceptance).
+**M1.4** — Authentication in progress. S12–S13 complete. Next: S14 (session management, permissions, re-auth gate).
 
 _Update this line at the start of each new milestone session._
 
