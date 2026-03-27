@@ -105,8 +105,27 @@ type AnalyticsEventRow = {
   ua_class: string | null
 }
 
+type LimitProfileRow = {
+  name: string
+  max_deployments: number | null
+  max_deploy_size_bytes: number | null
+  max_total_storage_bytes: number | null
+  max_monthly_bandwidth_bytes: number | null
+  max_file_size_bytes: number | null
+  version_history_count: number
+  custom_domain_allowed: boolean
+  access_tokens_allowed: boolean
+  max_access_tokens: number
+  webhooks_allowed: boolean
+  api_rpm: number
+  api_daily_quota: number
+  api_monthly_quota: number
+  remove_badge: boolean
+  workspace_sso_allowed: boolean
+  updated_at: string
+}
+
 type BandwidthDailyRow = {
-  id: string
   deployment_id: string
   date: string
   bytes_served: number
@@ -186,9 +205,15 @@ export type Database = {
         Update: never
         Relationships: []
       }
+      limit_profiles: {
+        Row: LimitProfileRow
+        Insert: Partial<LimitProfileRow> & { name: string }
+        Update: Partial<LimitProfileRow>
+        Relationships: []
+      }
       bandwidth_daily: {
         Row: BandwidthDailyRow
-        Insert: Omit<BandwidthDailyRow, 'id'>
+        Insert: BandwidthDailyRow
         Update: Partial<BandwidthDailyRow>
         Relationships: []
       }

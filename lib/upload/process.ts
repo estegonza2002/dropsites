@@ -7,6 +7,7 @@ import { generateSlug } from '@/lib/slug/generate'
 import { validateSlug, checkSlugAvailability } from '@/lib/slug/validate'
 import { storage } from '@/lib/storage'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { checkDeploymentLimits } from '@/lib/limits/check'
 
 export type DeploymentResult = {
   deploymentId: string
@@ -97,7 +98,17 @@ export async function processUpload(input: UploadInput): Promise<DeploymentResul
     ]
   }
 
-  // --- Step 2: Check blocked hashes ---
+  // --- Step 2: Check deployment limits ---
+  const totalUploadBytes = isZip
+    ? filesToStore.reduce((sum, f) => sum + f.size, 0)
+    : filesToStore[0]?.size ?? 0
+
+  const limitCheck = await checkDeploymentLimits(workspaceId, totalUploadBytes, filesToStore.length)
+  if (!limitCheck.allowed) {
+    throw new UploadError(limitCheck.reason ?? 'Upload rejected: plan limit reached', 403)
+  }
+
+  // --- Step 3: Check blocked hashes ---
   for (const f of filesToStore) {
     const blocked = await checkBlockedHash(f.hash)
     if (blocked) {
@@ -105,7 +116,7 @@ export async function processUpload(input: UploadInput): Promise<DeploymentResul
     }
   }
 
-  // --- Step 3: Resolve slug ---
+  // --- Step 4: Resolve slug ---
   let resolvedSlug: string
 
   if (input.slug) {

@@ -36,7 +36,7 @@ depends_on:
 - [x] **S09** — Upload UI (drag-drop zone, progress bar, success screen, slug input) — 2026-03-27
 
 ### M1.3 — Limits
-- [ ] **S10** — Limit profile system (DB, getProfile, assignProfile, pre-upload checks)
+- [x] **S10** — Limit profile system (DB, getProfile, assignProfile, pre-upload checks) — 2026-03-27
 - [ ] **S11** — Limit enforcement UX (quota display, disabled states, error messages)
 
 ### M1.4 — Authentication
