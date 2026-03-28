@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveDeployment, resolveFile } from '@/lib/serving/resolve'
 import { getServingHeaders } from '@/lib/serving/headers'
+import { verifyToken } from '@/lib/serving/password'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
 
 // Paths handled by the App Router — pass straight through
@@ -100,7 +101,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   if (deployment.password_hash) {
     const sessionCookie = request.cookies.get(`ds-auth-${deployment.id}`)
-    if (!sessionCookie) {
+    const tokenValue = sessionCookie?.value
+    const isValid =
+      tokenValue != null &&
+      (await verifyToken(tokenValue, deployment.id))
+
+    if (!isValid) {
       return NextResponse.redirect(new URL(`/p/${slug}`, request.url))
     }
   }

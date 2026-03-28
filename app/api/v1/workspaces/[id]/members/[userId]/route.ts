@@ -71,8 +71,11 @@ export async function DELETE(_request: NextRequest, context: RouteContext): Prom
 
   const role = await getUserRole(user.id, id)
 
-  // Owners can remove anyone (except themselves); members can remove themselves
+  // Owners can remove anyone (except themselves); accepted members can remove themselves
   const isSelf = targetUserId === user.id
+  if (!role) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
   if (!isSelf && role !== 'owner') {
     return NextResponse.json({ error: 'Only owners can remove members' }, { status: 403 })
   }

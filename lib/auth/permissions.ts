@@ -16,7 +16,8 @@ const ROLE_RANK: Record<Role, number> = {
 }
 
 /**
- * Returns the user's role in a workspace, or null if they are not a member.
+ * Returns the user's role in a workspace, or null if they are not an accepted member.
+ * Pending invitations (accepted_at IS NULL) do not grant access.
  */
 export async function getUserRole(
   userId: string,
@@ -28,6 +29,7 @@ export async function getUserRole(
     .select('role')
     .eq('user_id', userId)
     .eq('workspace_id', workspaceId)
+    .not('accepted_at', 'is', null)
     .maybeSingle()
 
   return (data?.role as Role) ?? null

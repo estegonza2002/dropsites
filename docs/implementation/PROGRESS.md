@@ -2,7 +2,7 @@
 title: Implementation Progress
 owner: engineering
 version: "1.0"
-last_updated: 2026-03-27
+last_updated: 2026-03-28
 depends_on:
   - implementation/PLAN.md
   - implementation/TASK_CARDS.md
@@ -49,10 +49,10 @@ depends_on:
 - [x] **S16** — Deployment table (list, sort, search, filter, badges, detail page) — 2026-03-27
 - [x] **S17** — Row actions (lock, update, duplicate, rename, delete, bulk delete, disable/reactivate) — 2026-03-27
 - [x] **S18** — Workspace management (create, settings, members, roles, invitations) — 2026-03-28
-- [ ] **S19** — RLS policies + permission checks across all routes
+- [x] **S19** — RLS policies + permission checks across all routes — 2026-03-28
 
 ### M1.6 — Password Protection
-- [ ] **S20** — Password set/remove, prompt page, verification, brute-force rate limiting
+- [x] **S20** — Password set/remove, prompt page, verification, brute-force rate limiting — 2026-03-28
 
 ### M1.7 — Code Editor
 - [ ] **S21** — CodeMirror editor, file tree, save/publish, diff summary, auto-save draft

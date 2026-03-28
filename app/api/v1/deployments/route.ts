@@ -32,13 +32,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const slugEntry = formData.get('slug')
   const slug = typeof slugEntry === 'string' && slugEntry.trim() ? slugEntry.trim() : undefined
 
-  // Resolve workspace — use first workspace the user owns
+  // Resolve workspace — use first workspace the user owns (accepted memberships only)
   const admin = createAdminClient()
   const { data: membership, error: membershipError } = await admin
     .from('workspace_members')
     .select('workspace_id')
     .eq('user_id', user.id)
     .eq('role', 'owner')
+    .not('accepted_at', 'is', null)
     .limit(1)
     .single()
 
@@ -86,11 +87,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const admin = createAdminClient()
 
-  // Get user's workspaces
+  // Get user's workspaces (only accepted memberships)
   const { data: memberships } = await admin
     .from('workspace_members')
     .select('workspace_id')
     .eq('user_id', user.id)
+    .not('accepted_at', 'is', null)
 
   const workspaceIds = (memberships ?? []).map((m) => m.workspace_id)
 
