@@ -8,8 +8,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
 import { DeploymentRow } from './deployment-row'
 import { DeploymentSearch, type StatusFilter } from './deployment-search'
+import { BulkActionsBar } from './bulk-actions-bar'
 import { EmptyState } from '@/components/common/empty-state'
 import { Upload, Search } from 'lucide-react'
 import type { Database } from '@/lib/supabase/types'
@@ -32,11 +34,13 @@ export type DeploymentListItem = Pick<
   | 'created_at'
 >
 
+type Role = 'owner' | 'publisher' | 'viewer'
 type SortField = 'slug' | 'storage_bytes' | 'total_views' | 'created_at'
 type SortDir = 'asc' | 'desc'
 
 interface DeploymentTableProps {
   deployments: DeploymentListItem[]
+  roleByWorkspace: Record<string, Role>
 }
 
 
@@ -62,7 +66,9 @@ function matchesStatusFilter(d: DeploymentListItem, filter: StatusFilter): boole
   }
 }
 
-export function DeploymentTable({ deployments }: DeploymentTableProps) {
+export function DeploymentTable({ deployments: initialDeployments, roleByWorkspace }: DeploymentTableProps) {
+  const [deployments, setDeployments] = useState<DeploymentListItem[]>(initialDeployments)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [sortField, setSortField] = useState<SortField>('created_at')
@@ -75,6 +81,40 @@ export function DeploymentTable({ deployments }: DeploymentTableProps) {
       setSortField(field)
       setSortDir('asc')
     }
+  }
+
+  function handleSelect(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }
+
+  function handleDelete(id: string) {
+    setDeployments((prev) => prev.filter((d) => d.id !== id))
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  }
+
+  function handleUpdate(id: string, patch: Partial<DeploymentListItem>) {
+    setDeployments((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+    )
+  }
+
+  function handleDuplicate(newDeployment: DeploymentListItem) {
+    setDeployments((prev) => [newDeployment, ...prev])
+  }
+
+  function handleBulkDeleteSuccess(deletedSlugs: string[]) {
+    const slugSet = new Set(deletedSlugs)
+    setDeployments((prev) => prev.filter((d) => !slugSet.has(d.slug)))
+    setSelectedIds(new Set())
   }
 
   const filtered = useMemo(() => {
@@ -95,6 +135,24 @@ export function DeploymentTable({ deployments }: DeploymentTableProps) {
       })
   }, [deployments, query, statusFilter, sortField, sortDir])
 
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((d) => selectedIds.has(d.id))
+
+  function handleSelectAll(checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      filtered.forEach((d) => {
+        if (checked) next.add(d.id)
+        else next.delete(d.id)
+      })
+      return next
+    })
+  }
+
+  const selectedSlugs = filtered
+    .filter((d) => selectedIds.has(d.id))
+    .map((d) => d.slug)
+
   if (deployments.length === 0) {
     return (
       <EmptyState
@@ -106,13 +164,21 @@ export function DeploymentTable({ deployments }: DeploymentTableProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <DeploymentSearch
         query={query}
         statusFilter={statusFilter}
         onQueryChange={setQuery}
         onStatusFilterChange={setStatusFilter}
       />
+
+      {selectedSlugs.length > 0 && (
+        <BulkActionsBar
+          selectedSlugs={selectedSlugs}
+          onSuccess={handleBulkDeleteSuccess}
+          onClear={() => setSelectedIds(new Set())}
+        />
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -126,6 +192,13 @@ export function DeploymentTable({ deployments }: DeploymentTableProps) {
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
+                  <TableHead className="w-10 pr-0">
+                    <Checkbox
+                      checked={allFilteredSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all deployments"
+                    />
+                  </TableHead>
                   <TableHead
                     className="cursor-pointer select-none hover:text-foreground"
                     onClick={() => handleSortClick('slug')}
@@ -155,12 +228,21 @@ export function DeploymentTable({ deployments }: DeploymentTableProps) {
                     Created
                     <SortIcon dir={sortField === 'created_at' ? sortDir : null} />
                   </TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-10 pl-0" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((d) => (
-                  <DeploymentRow key={d.id} deployment={d} />
+                  <DeploymentRow
+                    key={d.id}
+                    deployment={d}
+                    role={roleByWorkspace[d.workspace_id] ?? 'viewer'}
+                    selected={selectedIds.has(d.id)}
+                    onSelect={handleSelect}
+                    onDelete={handleDelete}
+                    onUpdate={handleUpdate}
+                    onDuplicate={handleDuplicate}
+                  />
                 ))}
               </TableBody>
             </Table>

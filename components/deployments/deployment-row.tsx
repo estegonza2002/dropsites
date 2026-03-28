@@ -1,16 +1,41 @@
 import Link from 'next/link'
 import { TableCell, TableRow } from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
 import { StatusBadge } from './deployment-badges'
+import { DeploymentRowActions } from './deployment-row-actions'
 import { formatBytes, formatRelativeDate } from '@/lib/utils/format'
 import type { DeploymentListItem } from './deployment-table'
 
+type Role = 'owner' | 'publisher' | 'viewer'
+
 interface DeploymentRowProps {
   deployment: DeploymentListItem
+  role: Role
+  selected: boolean
+  onSelect: (id: string, checked: boolean) => void
+  onDelete: (id: string) => void
+  onUpdate: (id: string, patch: Partial<DeploymentListItem>) => void
+  onDuplicate: (newDeployment: DeploymentListItem) => void
 }
 
-export function DeploymentRow({ deployment }: DeploymentRowProps) {
+export function DeploymentRow({
+  deployment,
+  role,
+  selected,
+  onSelect,
+  onDelete,
+  onUpdate,
+  onDuplicate,
+}: DeploymentRowProps) {
   return (
-    <TableRow className="group">
+    <TableRow className="group" data-state={selected ? 'selected' : undefined}>
+      <TableCell className="w-10 pr-0">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={(checked) => onSelect(deployment.id, !!checked)}
+          aria-label={`Select ${deployment.slug}`}
+        />
+      </TableCell>
       <TableCell className="font-medium">
         <Link
           href={`/dashboard/deployments/${deployment.slug}`}
@@ -34,8 +59,15 @@ export function DeploymentRow({ deployment }: DeploymentRowProps) {
       <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
         {formatRelativeDate(deployment.created_at)}
       </TableCell>
-      {/* Actions column — populated in S17 */}
-      <TableCell />
+      <TableCell className="w-10 pl-0">
+        <DeploymentRowActions
+          deployment={deployment}
+          role={role}
+          onDelete={onDelete}
+          onUpdate={onUpdate}
+          onDuplicate={onDuplicate}
+        />
+      </TableCell>
     </TableRow>
   )
 }

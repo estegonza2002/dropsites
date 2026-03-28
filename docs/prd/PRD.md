@@ -1,10 +1,10 @@
 ---
+
 title: Product Requirements Document
 owner: product
 version: "2.0"
 last_updated: 2026-03-26
 depends_on: []
----
 
 # DropSites — Product Requirements Document
 
@@ -566,7 +566,7 @@ Posture B adds proactive automated scanning. Every upload is checked before goin
 
 | ID    | Requirement                                                                     | P   |
 | ----- | ------------------------------------------------------------------------------- | --- |
-| FR-86 | Generate a pre-built </body> embed snippet for every deployment                 | M   |
+| FR-86 | Generate a pre-built embed snippet for every deployment                         | M   |
 | FR-87 | Snippet includes sensible defaults: width 100%, height 600px, sandbox attribute | M   |
 | FR-88 | Allow publisher to customise iframe dimensions before copying                   | S   |
 | FR-89 | One-click copy of embed snippet from dashboard row and detail page              | M   |
@@ -695,19 +695,19 @@ Posture B adds proactive automated scanning. Every upload is checked before goin
 DropSites must be deployable into any cloud environment or on-premise infrastructure a customer requires. No cloud provider SDKs are hardcoded. All configuration is environment-variable driven.
 
 
-| ID     | Requirement                                                                                                                                               | P   |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| FR-191 | All storage operations use an S3-compatible API abstraction — no AWS SDK calls directly in application code                                               | M   |
-| FR-192 | Storage backend is selected via environment variable: local | s3 | gcs | azure — all use the same S3-compatible interface                                 | M   |
-| FR-193 | Database backend is selected via environment variable: sqlite | postgresql                                                                                | M   |
-| FR-194 | All secrets (API keys, DB credentials, licence keys) loaded from environment variables or a mounted secrets volume — never from config files in the image | M   |
-| FR-195 | Publish a Helm chart for Kubernetes deployment — tested on GKE, EKS, and AKS                                                                              | M   |
-| FR-196 | Publish Terraform modules for GCP, AWS, and Azure — provisions all required infrastructure and deploys the container                                      | M   |
-| FR-197 | Publish a docker-compose.yml for single-node on-premise deployments                                                                                       | M   |
-| FR-198 | Publish a cloud mapping reference document: DropSites component → GCP / AWS / Azure / on-premise equivalent                                               | M   |
-| FR-199 | All container images published to a registry accessible without egress to dropsites.app — supports air-gapped deployments                                 | S   |
-| FR-200 | Provide a configuration validation command: dropsites validate-config — checks all required env vars and connectivity before first run                    | M   |
-| FR-201 | Health check endpoint (/health) reports storage backend, database, and licence key status separately                                                      | M   |
+| ID     | Requirement                                                                                                                                               | P          |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| FR-191 | All storage operations use an S3-compatible API abstraction — no AWS SDK calls directly in application code                                               | M          |
+| FR-192 | Storage backend is selected via environment variable: local                                                                                               | s3         |
+| FR-193 | Database backend is selected via environment variable: sqlite                                                                                             | postgresql |
+| FR-194 | All secrets (API keys, DB credentials, licence keys) loaded from environment variables or a mounted secrets volume — never from config files in the image | M          |
+| FR-195 | Publish a Helm chart for Kubernetes deployment — tested on GKE, EKS, and AKS                                                                              | M          |
+| FR-196 | Publish Terraform modules for GCP, AWS, and Azure — provisions all required infrastructure and deploys the container                                      | M          |
+| FR-197 | Publish a docker-compose.yml for single-node on-premise deployments                                                                                       | M          |
+| FR-198 | Publish a cloud mapping reference document: DropSites component → GCP / AWS / Azure / on-premise equivalent                                               | M          |
+| FR-199 | All container images published to a registry accessible without egress to dropsites.app — supports air-gapped deployments                                 | S          |
+| FR-200 | Provide a configuration validation command: dropsites validate-config — checks all required env vars and connectivity before first run                    | M          |
+| FR-201 | Health check endpoint (/health) reports storage backend, database, and licence key status separately                                                      | M          |
 
 
 ## 3.32  Enterprise Deployment Delivery
@@ -1117,15 +1117,15 @@ The CSP default must be defined explicitly — not left to Claude Code to invent
 ## 3.57  API — Search, Filter & Workspace Endpoints
 
 
-| ID     | Requirement                                                                                                                                                                             | P    |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| FR-321 | GET /api/v1/deployments supports query params: q (slug search), status (active|archived|disabled), namespace, workspace_id, created_after, created_before, sort (created|updated|views) | M·P2 |
-| FR-322 | POST /api/v1/workspaces — create a workspace                                                                                                                                            | M·P2 |
-| FR-323 | GET /api/v1/workspaces — list workspaces the caller is a member of                                                                                                                      | M·P2 |
-| FR-324 | POST /api/v1/workspaces/:id/members — invite a member by email                                                                                                                          | M·P2 |
-| FR-325 | DELETE /api/v1/workspaces/:id/members/:user_id — remove a member                                                                                                                        | M·P2 |
-| FR-326 | PATCH /api/v1/workspaces/:id/members/:user_id — update member role                                                                                                                      | M·P2 |
-| FR-327 | GET /api/v1/workspaces/:id/analytics — aggregate analytics for all workspace deployments                                                                                                | S·P2 |
+| ID     | Requirement                                                                              | P        |
+| ------ | ---------------------------------------------------------------------------------------- | -------- |
+| FR-321 | GET /api/v1/deployments supports query params: q (slug search), status (active           | archived |
+| FR-322 | POST /api/v1/workspaces — create a workspace                                             | M·P2     |
+| FR-323 | GET /api/v1/workspaces — list workspaces the caller is a member of                       | M·P2     |
+| FR-324 | POST /api/v1/workspaces/:id/members — invite a member by email                           | M·P2     |
+| FR-325 | DELETE /api/v1/workspaces/:id/members/:user_id — remove a member                         | M·P2     |
+| FR-326 | PATCH /api/v1/workspaces/:id/members/:user_id — update member role                       | M·P2     |
+| FR-327 | GET /api/v1/workspaces/:id/analytics — aggregate analytics for all workspace deployments | S·P2     |
 
 
 ## 3.58  Two-Factor Authentication (Phase 2)
@@ -1424,7 +1424,7 @@ A key architectural constraint is that DropSites never modifies uploaded source 
 | email_verified_at  | TIMESTAMP    | Null until verified                                  |
 | phone_number       | VARCHAR(32)  | Nullable — verified via OTP before first SMS         |
 | phone_verified_at  | TIMESTAMP    | Null until verified                                  |
-| limit_profile      | VARCHAR(64)  | Current profile: free | pro | team | enterprise      |
+| limit_profile      | VARCHAR(64)  | Current profile: free                                |
 | trial_started_at   | TIMESTAMP    | Nullable — set on first login, null if no trial      |
 | trial_ends_at      | TIMESTAMP    | Nullable — 14 days after trial_started_at            |
 | notification_prefs | JSONB        | Per-event email/SMS opt-in map                       |
@@ -1446,7 +1446,7 @@ A key architectural constraint is that DropSites never modifies uploaded source 
 | owner_id               | UUID → users | Workspace owner — always has Owner role               |
 | limit_profile          | VARCHAR(64)  | Profile applied to the entire workspace               |
 | stripe_subscription_id | VARCHAR(256) | Nullable — Phase 2                                    |
-| data_region            | ENUM         | us | eu — storage region for Cloudflare R2            |
+| data_region            | ENUM         | us                                                    |
 | white_label_config     | JSONB        | Nullable — enterprise only: logo, brand name, colours |
 | created_at             | TIMESTAMP    |                                                       |
 | deleted_at             | TIMESTAMP    | Soft-delete                                           |
@@ -1459,7 +1459,7 @@ A key architectural constraint is that DropSites never modifies uploaded source 
 | ------------ | ----------------- | ----------------------------------------- |
 | workspace_id | UUID → workspaces | Foreign key                               |
 | user_id      | UUID → users      | Foreign key                               |
-| role         | ENUM              | owner | publisher | viewer                |
+| role         | ENUM              | owner                                     |
 | invited_by   | UUID → users      | Who sent the invitation                   |
 | invited_at   | TIMESTAMP         | When invitation was sent                  |
 | accepted_at  | TIMESTAMP         | Nullable — null until invitation accepted |
@@ -1509,7 +1509,7 @@ Monthly bandwidth totals are computed by summing bandwidth_daily rows for the cu
 | entry_path     | VARCHAR(512)      | Relative path to index file within storage root          |
 | storage_bytes  | BIGINT            | Total size of all assets                                 |
 | password_hash  | VARCHAR(256)      | bcrypt hash of access password — nullable                |
-| classification | ENUM              | internal | restricted | public                           |
+| classification | ENUM              | internal                                                 |
 | expires_at     | TIMESTAMP         | Auto-archive date — nullable                             |
 | created_at     | TIMESTAMP         | Creation time                                            |
 | updated_at     | TIMESTAMP         | Last content update                                      |
@@ -1531,14 +1531,14 @@ Monthly bandwidth totals are computed by summing bandwidth_daily rows for the cu
 ### audit_log
 
 
-| Field         | Type         | Notes                                                                                                          |
-| ------------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
-| id            | UUID         | Primary key                                                                                                    |
-| actor_id      | UUID → users | User who performed the action                                                                                  |
-| action        | ENUM         | publish | overwrite | delete | archive | password_set | password_clear | role_change | key_create | key_revoke |
-| deployment_id | UUID         | Target deployment — nullable for org-level actions                                                             |
-| occurred_at   | TIMESTAMP    | Event time                                                                                                     |
-| metadata      | JSONB        | Action-specific context (e.g. previous slug, new slug, IP)                                                     |
+| Field         | Type         | Notes                                                      |
+| ------------- | ------------ | ---------------------------------------------------------- |
+| id            | UUID         | Primary key                                                |
+| actor_id      | UUID → users | User who performed the action                              |
+| action        | ENUM         | publish                                                    |
+| deployment_id | UUID         | Target deployment — nullable for org-level actions         |
+| occurred_at   | TIMESTAMP    | Event time                                                 |
+| metadata      | JSONB        | Action-specific context (e.g. previous slug, new slug, IP) |
 
 
 ## 5.3  REST API Contract

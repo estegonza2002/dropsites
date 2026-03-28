@@ -258,6 +258,37 @@ export type Database = {
         Update: Partial<BandwidthDailyRow>
         Relationships: []
       }
+      slug_redirects: {
+        Row: {
+          id: string
+          old_slug: string
+          old_namespace: string | null
+          new_slug: string
+          new_namespace: string | null
+          deployment_id: string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          old_slug: string
+          old_namespace?: string | null
+          new_slug: string
+          new_namespace?: string | null
+          deployment_id?: string | null
+          expires_at: string
+          created_at?: string
+        }
+        Update: Partial<{
+          old_slug: string
+          old_namespace: string | null
+          new_slug: string
+          new_namespace: string | null
+          deployment_id: string | null
+          expires_at: string
+        }>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

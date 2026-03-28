@@ -16,16 +16,21 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser()
 
   let deployments: DeploymentListItem[] = []
+  let roleByWorkspace: Record<string, 'owner' | 'publisher' | 'viewer'> = {}
 
   if (user) {
     const admin = createAdminClient()
 
     const { data: memberships } = await admin
       .from('workspace_members')
-      .select('workspace_id')
+      .select('workspace_id, role')
       .eq('user_id', user.id)
 
     const workspaceIds = (memberships ?? []).map((m) => m.workspace_id)
+
+    roleByWorkspace = Object.fromEntries(
+      (memberships ?? []).map((m) => [m.workspace_id, m.role as 'owner' | 'publisher' | 'viewer']),
+    )
 
     if (workspaceIds.length > 0) {
       const { data } = await admin
@@ -52,7 +57,7 @@ export default async function DashboardPage() {
 
       <UploadZone showSlugInput />
 
-      <DeploymentTable deployments={deployments} />
+      <DeploymentTable deployments={deployments} roleByWorkspace={roleByWorkspace} />
     </div>
   )
 }
