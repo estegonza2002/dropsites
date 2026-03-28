@@ -72,7 +72,9 @@ export async function provisionUser(
   const { error: memberError } = await admin.from('workspace_members').insert({
     workspace_id: workspace.id,
     user_id: user.id,
+    email: user.email!,
     role: 'owner',
+    accepted_at: new Date().toISOString(),
   })
 
   if (memberError) {

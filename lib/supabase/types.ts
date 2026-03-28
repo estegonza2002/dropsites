@@ -56,8 +56,14 @@ type DeploymentFileRow = {
 type WorkspaceMemberRow = {
   id: string
   workspace_id: string
-  user_id: string
+  user_id: string | null
+  email: string
   role: 'owner' | 'publisher' | 'viewer'
+  invited_by: string | null
+  invited_at: string
+  accepted_at: string | null
+  invite_token: string | null
+  invite_expires_at: string | null
   created_at: string
 }
 
@@ -190,7 +196,17 @@ export type Database = {
       }
       workspace_members: {
         Row: WorkspaceMemberRow
-        Insert: Omit<WorkspaceMemberRow, 'id' | 'created_at'>
+        Insert: {
+          workspace_id: string
+          email: string
+          role: 'owner' | 'publisher' | 'viewer'
+          user_id?: string | null
+          invited_by?: string | null
+          invited_at?: string
+          accepted_at?: string | null
+          invite_token?: string | null
+          invite_expires_at?: string | null
+        }
         Update: Partial<WorkspaceMemberRow>
         Relationships: []
       }

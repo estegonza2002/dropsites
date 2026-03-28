@@ -14,9 +14,10 @@ import { createClient } from '@/lib/supabase/client'
 
 interface MobileSheetNavProps {
   user: User
+  currentWorkspaceId?: string
 }
 
-export function MobileSheetNav({ user }: MobileSheetNavProps) {
+export function MobileSheetNav({ user, currentWorkspaceId }: MobileSheetNavProps) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -59,7 +60,7 @@ export function MobileSheetNav({ user }: MobileSheetNavProps) {
         </SheetHeader>
 
         <div className="flex-1 px-3 py-4">
-          <NavItems onNavigate={() => setOpen(false)} />
+          <NavItems currentWorkspaceId={currentWorkspaceId} onNavigate={() => setOpen(false)} />
         </div>
 
         <div className="border-t px-3 py-3 flex items-center gap-3">

@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/server'
@@ -35,13 +36,21 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     workspaces = (data ?? []) as WorkspaceRow[]
   }
 
+  // Resolve current workspace from cookie
+  const cookieStore = await cookies()
+  const cookieWsId = cookieStore.get('ds-workspace')?.value
+  const currentWorkspaceId =
+    (cookieWsId && workspaces.some((w) => w.id === cookieWsId) ? cookieWsId : null) ??
+    workspaces.find((w) => w.is_personal)?.id ??
+    workspaces[0]?.id
+
   const isEmailUnverified = !user.email_confirmed_at
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <AppSidebar user={user} workspaces={workspaces} />
+      <AppSidebar user={user} workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <TopNav user={user} workspaces={workspaces} />
+        <TopNav user={user} workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
         {isEmailUnverified && <VerifyEmailBanner />}
         <main className="flex-1 overflow-y-auto">
           {children}

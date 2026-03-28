@@ -12,7 +12,7 @@ interface TopNavProps {
 export function TopNav({ user, workspaces, currentWorkspaceId }: TopNavProps) {
   return (
     <header className="h-14 border-b flex items-center px-4 gap-3 shrink-0 bg-background">
-      <MobileSheetNav user={user} />
+      <MobileSheetNav user={user} currentWorkspaceId={currentWorkspaceId} />
       <div className="flex-1" />
       <WorkspaceSelector
         workspaces={workspaces}

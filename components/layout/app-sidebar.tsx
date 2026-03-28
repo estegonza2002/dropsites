@@ -15,9 +15,10 @@ import type { WorkspaceRow } from '@/lib/auth/types'
 interface AppSidebarProps {
   user: User
   workspaces: WorkspaceRow[]
+  currentWorkspaceId?: string
 }
 
-export function AppSidebar({ user }: AppSidebarProps) {
+export function AppSidebar({ user, currentWorkspaceId }: AppSidebarProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -39,7 +40,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
       {/* Nav */}
       <ScrollArea className="flex-1 px-3 py-4">
-        <NavItems />
+        <NavItems currentWorkspaceId={currentWorkspaceId} />
       </ScrollArea>
 
       {/* User footer */}
