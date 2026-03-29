@@ -66,8 +66,8 @@ depends_on:
 - [x] **S25** — Link expiry (date picker, enforcement, reactivation, expired page) — 2026-03-29
 
 ### M1.10 — Notifications
-- [ ] **S26** — Resend + Twilio clients, dispatcher, preference checking, rate limiting
-- [ ] **S27** — All notification templates (publisher + admin) + preferences UI + phone OTP
+- [x] **S26** — Resend + Twilio clients, dispatcher, preference checking, rate limiting — 2026-03-29
+- [x] **S27** — All notification templates (publisher + admin) + preferences UI + phone OTP — 2026-03-29
 
 ### M1.11 — Abuse Prevention
 - [ ] **S28** — Rate limits, abuse report form/flow, admin disable/suspend, DMCA/TOS pages, content hash registry
