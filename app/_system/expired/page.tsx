@@ -1,34 +1,43 @@
 import Link from 'next/link'
+import { Clock } from 'lucide-react'
 
 export default function ExpiredPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
+      {/* DropSites logo */}
+      <Link
+        href="/"
+        className="mb-8 text-lg font-medium tracking-tight"
+        aria-label="DropSites home"
+      >
+        Drop<span style={{ color: 'var(--color-accent)' }}>Sites</span>
+      </Link>
+
       <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          className="h-5 w-5 text-muted-foreground"
+        <Clock
+          size={20}
+          strokeWidth={1.5}
+          className="text-muted-foreground"
           aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v5.5l3 1.5" />
-        </svg>
+        />
       </div>
+
       <h1 className="text-xl font-medium text-foreground mb-2">
         This link has expired
       </h1>
-      <p className="text-sm text-muted-foreground mb-8 max-w-xs">
+      <p className="text-sm text-muted-foreground mb-2 max-w-xs">
         The owner of this deployment set an expiry date that has now passed.
-        Contact the owner to request access.
       </p>
+      <p className="text-sm text-muted-foreground mb-8 max-w-xs">
+        Contact the owner to request access or a new link.
+      </p>
+
       <Link
         href="/"
         className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
-        style={{ color: 'var(--accent)' }}
+        style={{ color: 'var(--color-accent)' }}
       >
-        ← Back to home
+        Go to DropSites
       </Link>
     </div>
   )

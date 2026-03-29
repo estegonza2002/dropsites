@@ -55,7 +55,7 @@ depends_on:
 - [x] **S20** — Password set/remove, prompt page, verification, brute-force rate limiting — 2026-03-28
 
 ### M1.7 — Code Editor
-- [ ] **S21** — CodeMirror editor, file tree, save/publish, diff summary, auto-save draft
+- [x] **S21** — CodeMirror editor, file tree, save/publish, diff summary, auto-save draft — 2026-03-29
 - [x] **S22** — Editor locks, conflict detection, resolution options — 2026-03-29
 
 ### M1.8 — Auto-Navigation Widget
@@ -63,7 +63,7 @@ depends_on:
 
 ### M1.9 — Share, QR, Embed, Expiry
 - [ ] **S24** — Share sheet (copy link, QR code, embed snippet, email share, password toggle)
-- [ ] **S25** — Link expiry (date picker, enforcement, reactivation, expired page)
+- [x] **S25** — Link expiry (date picker, enforcement, reactivation, expired page) — 2026-03-29
 
 ### M1.10 — Notifications
 - [ ] **S26** — Resend + Twilio clients, dispatcher, preference checking, rate limiting

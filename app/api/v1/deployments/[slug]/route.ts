@@ -124,6 +124,24 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
   if (typeof body.allow_indexing === 'boolean') updates.allow_indexing = body.allow_indexing
   if (typeof body.auto_nav_enabled === 'boolean') updates.auto_nav_enabled = body.auto_nav_enabled
 
+  // Link expiry (ISO string or null to clear)
+  if ('expires_at' in body) {
+    if (body.expires_at === null) {
+      updates.expires_at = null
+    } else if (typeof body.expires_at === 'string') {
+      const expiryDate = new Date(body.expires_at as string)
+      if (isNaN(expiryDate.getTime())) {
+        return NextResponse.json({ error: 'Invalid expires_at date' }, { status: 400 })
+      }
+      if (expiryDate <= new Date()) {
+        return NextResponse.json({ error: 'expires_at must be a future date' }, { status: 400 })
+      }
+      updates.expires_at = expiryDate.toISOString()
+    } else {
+      return NextResponse.json({ error: 'expires_at must be an ISO date string or null' }, { status: 400 })
+    }
+  }
+
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
   }

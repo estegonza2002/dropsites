@@ -7,7 +7,7 @@ import { StatusBadge } from '@/components/deployments/deployment-badges'
 import { HealthStatusBadge } from '@/components/deployments/health-status-badge'
 import { CopyUrlButton } from '@/components/deployments/copy-url-button'
 import { formatBytes, formatDate } from '@/lib/utils/format'
-import { ArrowLeft, FileText, Globe } from 'lucide-react'
+import { ArrowLeft, FileText, Globe, Code } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 
 interface PageProps {
@@ -79,6 +79,13 @@ export default async function DeploymentDetailPage({ params }: PageProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href={`/dashboard/deployments/${deployment.slug}/edit`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            <Code size={16} strokeWidth={1.5} />
+            Edit
+          </Link>
           <CopyUrlButton url={publicUrl} />
         </div>
       </div>
