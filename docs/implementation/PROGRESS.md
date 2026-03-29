@@ -74,8 +74,8 @@ depends_on:
 
 ### M1.12 — Analytics + Audit Log
 - [x] **S29** — Analytics recording, views, unique visitors, referrers, time-series charts — 2026-03-29
-- [ ] **S30** — Bandwidth tracking, usage panels, quota alerts, CSV export
-- [ ] **S31** — Audit log writer, admin usage panel, admin CSV export
+- [x] **S30** — Bandwidth tracking, usage panels, quota alerts, CSV export — 2026-03-29
+- [x] **S31** — Audit log writer, admin usage panel, admin CSV export — 2026-03-29
 
 ### M1.13 — Performance
 - [ ] **S32** — Compression, cache headers, CDN invalidation, image optimization, lazy loading, Lighthouse pass
