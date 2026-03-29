@@ -73,3 +73,8 @@ export function deploymentCreationHourlyLimit(userId: string): RateLimitResult {
 export function deploymentCreationDailyLimit(userId: string): RateLimitResult {
   return checkRateLimit(`deploy-daily:${userId}`, 50, 24 * 60 * 60 * 1000)
 }
+
+/** 5 abuse reports per IP per hour */
+export function abuseReportLimit(ip: string): RateLimitResult {
+  return checkRateLimit(`abuse-report:${ip}`, 5, 60 * 60 * 1000)
+}

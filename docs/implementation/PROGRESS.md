@@ -70,10 +70,10 @@ depends_on:
 - [x] **S27** — All notification templates (publisher + admin) + preferences UI + phone OTP — 2026-03-29
 
 ### M1.11 — Abuse Prevention
-- [ ] **S28** — Rate limits, abuse report form/flow, admin disable/suspend, DMCA/TOS pages, content hash registry
+- [x] **S28** — Rate limits, abuse report form/flow, admin disable/suspend, DMCA/TOS pages, content hash registry — 2026-03-29
 
 ### M1.12 — Analytics + Audit Log
-- [ ] **S29** — Analytics recording, views, unique visitors, referrers, time-series charts
+- [x] **S29** — Analytics recording, views, unique visitors, referrers, time-series charts — 2026-03-29
 - [ ] **S30** — Bandwidth tracking, usage panels, quota alerts, CSV export
 - [ ] **S31** — Audit log writer, admin usage panel, admin CSV export
 

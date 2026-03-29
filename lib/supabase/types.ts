@@ -323,6 +323,37 @@ export type Database = {
         }>
         Relationships: []
       }
+      abuse_reports: {
+        Row: {
+          id: string
+          deployment_url: string
+          deployment_slug: string | null
+          reporter_email: string
+          reason: string
+          description: string
+          status: string
+          resolved_by: string | null
+          resolved_at: string | null
+          resolution_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          deployment_url: string
+          deployment_slug?: string | null
+          reporter_email: string
+          reason: string
+          description: string
+          status?: string
+        }
+        Update: Partial<{
+          status: string
+          resolved_by: string | null
+          resolved_at: string | null
+          resolution_notes: string | null
+        }>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

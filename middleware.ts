@@ -10,6 +10,7 @@ import {
   loadDropsitesConfig,
   buildNavScriptTag,
 } from '@/lib/serving/auto-nav'
+import { recordView } from '@/lib/analytics/record'
 
 // Paths handled by the App Router — pass straight through
 const PLATFORM_PREFIXES = new Set([
@@ -199,6 +200,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       // Non-fatal — skip auto-nav if detection fails
     }
   }
+
+  // Record view (fire-and-forget — never delays serving)
+  recordView(deployment.id, request)
 
   return serveFile(request, deployment, file, 200, autoNavScript)
 }
