@@ -63,6 +63,11 @@ const ALLOWED_HEX = new Set([
   "#555",
   "#666",
   "#888",
+  // Pure black/white — used for QR codes (scanner compatibility)
+  "#000",
+  "#000000",
+  "#fff",
+  "#ffffff",
   // Google brand logo colours — third-party identity, cannot be tokenised
   "#4285f4",
   "#34a853",

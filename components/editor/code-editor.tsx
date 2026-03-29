@@ -113,7 +113,7 @@ export function CodeEditor({
           overflow: 'auto',
         },
         '.cm-gutters': {
-          borderRight: '1px solid var(--color-border, #e5e7eb)',
+          borderRight: '1px solid var(--color-border, currentColor)',
         },
       })
     )

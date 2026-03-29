@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   MoreHorizontal,
   Copy,
+  Share2,
   Lock,
   Upload,
   Files,
@@ -35,6 +36,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { InlinePasswordDialog } from './inline-password-popover'
 import { InlineUpload } from '@/components/upload/inline-upload'
+import { ShareSheet } from '@/components/share/share-sheet'
 import type { DeploymentListItem } from './deployment-table'
 
 type Role = 'owner' | 'publisher' | 'viewer'
@@ -65,6 +67,7 @@ export function DeploymentRowActions({
   const [duplicating, setDuplicating] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   const isViewer = role === 'viewer'
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ''
@@ -192,6 +195,16 @@ export function DeploymentRowActions({
           <DropdownMenuItem onClick={handleCopyUrl}>
             <Copy size={16} strokeWidth={1.5} className="mr-2" />
             Copy URL
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onSelect={() => {
+              setDropdownOpen(false)
+              setShareOpen(true)
+            }}
+          >
+            <Share2 size={16} strokeWidth={1.5} className="mr-2" />
+            Share
           </DropdownMenuItem>
 
           {!isViewer && (
@@ -324,6 +337,16 @@ export function DeploymentRowActions({
           </form>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ShareSheet
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        slug={deployment.slug}
+        hasPassword={!!deployment.password_hash}
+        onPasswordChange={(has) =>
+          onUpdate(deployment.id, { password_hash: has ? '__set__' : null })
+        }
+      />
 
       {/* Delete confirmation */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

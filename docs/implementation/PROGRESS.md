@@ -59,10 +59,10 @@ depends_on:
 - [x] **S22** — Editor locks, conflict detection, resolution options — 2026-03-29
 
 ### M1.8 — Auto-Navigation Widget
-- [ ] **S23** — Navigation detection, widget JS, page title inference, dropsites.json parsing
+- [x] **S23** — Navigation detection, widget JS, page title inference, dropsites.json parsing — 2026-03-29
 
 ### M1.9 — Share, QR, Embed, Expiry
-- [ ] **S24** — Share sheet (copy link, QR code, embed snippet, email share, password toggle)
+- [x] **S24** — Share sheet (copy link, QR code, embed snippet, email share, password toggle) — 2026-03-29
 - [x] **S25** — Link expiry (date picker, enforcement, reactivation, expired page) — 2026-03-29
 
 ### M1.10 — Notifications
