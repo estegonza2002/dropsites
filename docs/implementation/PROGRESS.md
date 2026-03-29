@@ -2,7 +2,7 @@
 title: Implementation Progress
 owner: engineering
 version: "1.0"
-last_updated: 2026-03-28
+last_updated: 2026-03-29
 depends_on:
   - implementation/PLAN.md
   - implementation/TASK_CARDS.md
@@ -96,13 +96,13 @@ depends_on:
 - [x] **S37** — Bot filter patterns, seed data, admin analytics separation — 2026-03-29
 
 ### M1.19 — Custom 404 + Redirects
-- [ ] **S38** — Custom 404.html serving, platform 404, slug redirects, dropsites.json redirects
+- [x] **S38** — Custom 404.html serving, platform 404, slug redirects, dropsites.json redirects — 2026-03-29
 
 ### M1.20 — Robots Control
-- [ ] **S39** — X-Robots-Tag default, per-deployment toggle, custom robots.txt
+- [x] **S39** — X-Robots-Tag default, per-deployment toggle, custom robots.txt — 2026-03-29
 
 ### M1.21 — Cookie Consent
-- [ ] **S40** — Cookie banner, consent recording, cookie policy page
+- [x] **S40** — Cookie banner, consent recording, cookie policy page — 2026-03-29
 
 ### M1.22 — Accessibility
 - [ ] **S41** — WCAG 2.1 AA pass, keyboard navigation, screen reader, axe audit
@@ -111,10 +111,10 @@ depends_on:
 - [ ] **S42** — Onboarding checklist, celebration modal, trial prompts, empty states
 
 ### M1.24 — Team SSO
-- [ ] **S43** — Workspace OIDC config, SSO UI, SSO redirect
+- [x] **S43** — Workspace OIDC config, SSO UI, SSO redirect — 2026-03-29
 
 ### M1.25 — Launch Prep
-- [ ] **S44** — Badge, changelog, help widget, offline banner, mobile responsive, account deletion, compromise recovery
+- [x] **S44** — Badge, changelog, help widget, offline banner, mobile responsive, account deletion, compromise recovery — 2026-03-29
 
 ---
 

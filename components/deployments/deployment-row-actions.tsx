@@ -324,6 +324,7 @@ export function DeploymentRowActions({
               placeholder="new-slug"
               autoFocus
               disabled={renameLoading}
+              aria-label="New slug name"
             />
             <AlertDialogFooter>
               <AlertDialogCancel disabled={renameLoading}>Cancel</AlertDialogCancel>

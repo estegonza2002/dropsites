@@ -7,6 +7,7 @@ import { AppSidebar } from '@/components/layout/app-sidebar'
 import { TopNav } from '@/components/layout/top-nav'
 import { VerifyEmailBanner } from '@/components/auth/verify-email-banner'
 import { TrialBanner } from '@/components/onboarding/trial-banner'
+import { CookieConsentBanner } from '@/components/auth/cookie-consent-banner'
 import { getTrialInfo } from '@/lib/auth/provision'
 import type { WorkspaceRow } from '@/lib/auth/types'
 
@@ -66,6 +67,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           {children}
         </main>
       </div>
+      <CookieConsentBanner />
     </div>
   )
 }

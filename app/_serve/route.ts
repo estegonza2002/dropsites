@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { storage } from '@/lib/storage'
 import { Readable } from 'stream'
+import { injectLazyLoading } from '@/lib/serving/lazy-loading'
 
 // This route is only reachable via NextResponse.rewrite() from middleware.
 // Direct requests without the correct secret are rejected.
@@ -41,30 +42,35 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const autoNavInject = request.headers.get('x-auto-nav-inject')
+  const isHtml = contentType.startsWith('text/html')
 
   try {
     const { body, contentLength } = await storage.get(BUCKET, storageKey)
 
-    // If we need to inject the auto-nav script, we must buffer the HTML
-    // and inject before </body>. Only applies to HTML responses.
-    if (autoNavInject && contentType.startsWith('text/html')) {
+    // If HTML, buffer for lazy-loading injection and optional auto-nav injection.
+    if (isHtml) {
       const chunks: Buffer[] = []
       for await (const chunk of body) {
         chunks.push(Buffer.from(chunk))
       }
       let html = Buffer.concat(chunks).toString('utf-8')
 
-      // Inject before </body> if present, otherwise append
-      const bodyCloseIdx = html.lastIndexOf('</body>')
-      if (bodyCloseIdx !== -1) {
-        html =
-          html.slice(0, bodyCloseIdx) +
-          '\n' +
-          autoNavInject +
-          '\n' +
-          html.slice(bodyCloseIdx)
-      } else {
-        html += '\n' + autoNavInject
+      // Inject lazy loading on <img> tags
+      html = injectLazyLoading(html)
+
+      // Inject auto-nav before </body> if present, otherwise append
+      if (autoNavInject) {
+        const bodyCloseIdx = html.lastIndexOf('</body>')
+        if (bodyCloseIdx !== -1) {
+          html =
+            html.slice(0, bodyCloseIdx) +
+            '\n' +
+            autoNavInject +
+            '\n' +
+            html.slice(bodyCloseIdx)
+        } else {
+          html += '\n' + autoNavInject
+        }
       }
 
       const encoded = new TextEncoder().encode(html)
@@ -88,6 +94,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return new NextResponse(webStream, { status: responseStatus, headers })
   } catch {
+    // Suppress stack traces — return generic error
     return new NextResponse('Not Found', { status: 404 })
   }
 }

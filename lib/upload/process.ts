@@ -3,11 +3,13 @@ import { extractZip } from './zip'
 import { detectEntryPoint } from './entry-point'
 import { computeHash, checkBlockedHash } from './content-hash'
 import { getMimeType } from './mime'
+import { isOptimizableImage, optimizeImage } from './image-optimize'
 import { generateSlug } from '@/lib/slug/generate'
 import { validateSlug, checkSlugAvailability } from '@/lib/slug/validate'
 import { storage } from '@/lib/storage'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkDeploymentLimits } from '@/lib/limits/check'
+import { purgeDeploymentCache } from '@/lib/serving/cdn'
 
 export type DeploymentResult = {
   deploymentId: string
@@ -96,6 +98,23 @@ export async function processUpload(input: UploadInput): Promise<DeploymentResul
         size: file.length,
       },
     ]
+  }
+
+  // --- Step 1b: Optimize images ---
+  for (let i = 0; i < filesToStore.length; i++) {
+    const f = filesToStore[i]
+    if (isOptimizableImage(f.path)) {
+      const result = await optimizeImage(f.content, f.path, f.mimeType)
+      if (result.optimized) {
+        filesToStore[i] = {
+          ...f,
+          content: result.content,
+          mimeType: result.mimeType,
+          size: result.content.length,
+          hash: computeHash(result.content),
+        }
+      }
+    }
   }
 
   // --- Step 2: Check deployment limits ---
@@ -219,6 +238,11 @@ export async function processUpload(input: UploadInput): Promise<DeploymentResul
     .from('deployments')
     .update({ current_version_id: version.id })
     .eq('id', deploymentId)
+
+  // --- Step 9: Purge CDN cache (fire-and-forget) ---
+  purgeDeploymentCache(resolvedSlug).catch(() => {
+    // Non-fatal — CDN will expire naturally
+  })
 
   return {
     deploymentId,

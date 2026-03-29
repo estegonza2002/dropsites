@@ -202,6 +202,10 @@ export function DeploymentTable({ deployments: initialDeployments, roleByWorkspa
                   <TableHead
                     className="cursor-pointer select-none hover:text-foreground"
                     onClick={() => handleSortClick('slug')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSortClick('slug') } }}
+                    tabIndex={0}
+                    role="columnheader"
+                    aria-sort={sortField === 'slug' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     Name / Slug
                     <SortIcon dir={sortField === 'slug' ? sortDir : null} />
@@ -210,6 +214,10 @@ export function DeploymentTable({ deployments: initialDeployments, roleByWorkspa
                   <TableHead
                     className="w-24 cursor-pointer select-none hover:text-foreground"
                     onClick={() => handleSortClick('storage_bytes')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSortClick('storage_bytes') } }}
+                    tabIndex={0}
+                    role="columnheader"
+                    aria-sort={sortField === 'storage_bytes' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     Size
                     <SortIcon dir={sortField === 'storage_bytes' ? sortDir : null} />
@@ -217,6 +225,10 @@ export function DeploymentTable({ deployments: initialDeployments, roleByWorkspa
                   <TableHead
                     className="w-20 cursor-pointer select-none hover:text-foreground"
                     onClick={() => handleSortClick('total_views')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSortClick('total_views') } }}
+                    tabIndex={0}
+                    role="columnheader"
+                    aria-sort={sortField === 'total_views' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     Views
                     <SortIcon dir={sortField === 'total_views' ? sortDir : null} />
@@ -224,6 +236,10 @@ export function DeploymentTable({ deployments: initialDeployments, roleByWorkspa
                   <TableHead
                     className="w-28 cursor-pointer select-none hover:text-foreground"
                     onClick={() => handleSortClick('created_at')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSortClick('created_at') } }}
+                    tabIndex={0}
+                    role="columnheader"
+                    aria-sort={sortField === 'created_at' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     Created
                     <SortIcon dir={sortField === 'created_at' ? sortDir : null} />

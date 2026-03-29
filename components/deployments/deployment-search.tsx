@@ -38,10 +38,11 @@ export function DeploymentSearch({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           className="pl-9"
+          aria-label="Search deployments"
         />
       </div>
       <Select value={statusFilter} onValueChange={(v) => onStatusFilterChange(v as StatusFilter)}>
-        <SelectTrigger className="w-full sm:w-40">
+        <SelectTrigger className="w-full sm:w-40" aria-label="Filter by status">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

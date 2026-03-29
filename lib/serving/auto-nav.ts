@@ -10,11 +10,18 @@ export interface NavPage {
   label: string
 }
 
+export interface DropsitesRedirectRule {
+  from: string
+  to: string
+  status?: 301 | 302
+}
+
 export interface DropsitesNavConfig {
   navigation?: {
     pages?: Array<{ path: string; label: string }>
     order?: 'custom' | 'alpha' | 'auto'
   }
+  redirects?: DropsitesRedirectRule[]
 }
 
 // ── Detection ──────────────────────────────────────────────────────────

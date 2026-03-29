@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveDeployment, resolveFile } from '@/lib/serving/resolve'
-import { getServingHeaders } from '@/lib/serving/headers'
+import { getServingHeaders, getDashboardSecurityHeaders } from '@/lib/serving/headers'
 import { verifyToken } from '@/lib/serving/password'
+import { resolveSlugRedirect } from '@/lib/serving/redirect'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
 import {
   detectMultiPageDeployment,
@@ -9,6 +10,7 @@ import {
   getDeploymentHtmlFiles,
   loadDropsitesConfig,
   buildNavScriptTag,
+  type DropsitesRedirectRule,
 } from '@/lib/serving/auto-nav'
 import { recordView } from '@/lib/analytics/record'
 
@@ -35,15 +37,86 @@ const PLATFORM_PREFIXES = new Set([
   '_serve',
 ])
 
+// Paths that get strict dashboard CSP
+const DASHBOARD_CSP_PREFIXES = new Set([
+  'dashboard',
+  'login',
+  'signup',
+  'settings',
+  'admin',
+  'invite',
+])
+
 // Secret verified by /_serve to confirm the request came from middleware
 const INTERNAL_SERVE_SECRET =
   process.env.INTERNAL_SERVE_SECRET ?? 'dropsites-internal'
+
+/**
+ * Detect path traversal attempts.
+ * Returns true if the path is safe, false if it contains traversal.
+ */
+function isPathSafe(path: string): boolean {
+  // Decode percent-encoded sequences to catch %2e%2e etc.
+  let decoded: string
+  try {
+    decoded = decodeURIComponent(path)
+  } catch {
+    // Malformed encoding — reject
+    return false
+  }
+
+  // Check for .. in any segment
+  const segments = decoded.split('/')
+  for (const segment of segments) {
+    if (segment === '..' || segment === '..%00' || segment.includes('\\..')) {
+      return false
+    }
+  }
+
+  // Also reject backslash traversal (Windows-style)
+  if (decoded.includes('\\')) return false
+
+  // Reject null bytes
+  if (decoded.includes('\0')) return false
+
+  return true
+}
+
+/**
+ * Match a requested path against dropsites.json redirect rules.
+ */
+function matchRedirectRule(
+  rules: DropsitesRedirectRule[],
+  requestPath: string,
+): DropsitesRedirectRule | null {
+  for (const rule of rules) {
+    if (rule.from === requestPath) {
+      return rule
+    }
+  }
+  return null
+}
+
+/**
+ * Generate a synthetic robots.txt based on the deployment's allow_indexing flag.
+ */
+function generateRobotsTxt(allowIndexing: boolean): string {
+  if (allowIndexing) {
+    return 'User-agent: *\nAllow: /\n'
+  }
+  return 'User-agent: *\nDisallow: /\n'
+}
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
 
   // Root path — pass through
   if (pathname === '/') return NextResponse.next()
+
+  // ── Path traversal prevention ─────────────────────────────────────
+  if (!isPathSafe(pathname)) {
+    return new NextResponse('Bad Request', { status: 400 })
+  }
 
   // ── Auth guard ────────────────────────────────────────────────────
   // Must refresh the session on every request so cookies stay valid.
@@ -60,6 +133,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     if (!session.user.email_confirmed_at) {
       response.headers.set('x-email-unverified', '1')
     }
+    // Apply dashboard security headers
+    const secHeaders = getDashboardSecurityHeaders()
+    for (const [key, value] of Object.entries(secHeaders)) {
+      response.headers.set(key, value)
+    }
     return response
   }
 
@@ -70,6 +148,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const { data: { session } } = await supabase.auth.getSession()
     if (session) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    // Apply dashboard security headers to login/signup
+    const secHeaders = getDashboardSecurityHeaders()
+    for (const [key, value] of Object.entries(secHeaders)) {
+      response.headers.set(key, value)
     }
     return response
   }
@@ -84,6 +167,15 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     firstSegment.startsWith('_') ||
     firstSegment.startsWith('.')
   ) {
+    // Apply dashboard CSP to platform pages that render UI
+    if (firstSegment && DASHBOARD_CSP_PREFIXES.has(firstSegment)) {
+      const response = NextResponse.next()
+      const secHeaders = getDashboardSecurityHeaders()
+      for (const [key, value] of Object.entries(secHeaders)) {
+        response.headers.set(key, value)
+      }
+      return response
+    }
     return NextResponse.next()
   }
 
@@ -91,10 +183,23 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Remaining segments form the file path within the deployment
   const requestedPath = segments.slice(1).join('/')
 
+  // ── Path traversal in sub-path ────────────────────────────────────
+  if (requestedPath && !isPathSafe(requestedPath)) {
+    return new NextResponse('Bad Request', { status: 400 })
+  }
+
   // ── Resolve deployment ────────────────────────────────────────────
   const deployment = await resolveDeployment(slug)
 
   if (!deployment) {
+    // Check for slug redirect before returning 404
+    const redirect = await resolveSlugRedirect(slug)
+    if (redirect) {
+      const newPath = requestedPath
+        ? `/${redirect.newSlug}/${requestedPath}`
+        : `/${redirect.newSlug}`
+      return NextResponse.redirect(new URL(newPath, request.url), 301)
+    }
     return new NextResponse('Not Found', { status: 404 })
   }
 
@@ -105,6 +210,28 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   if (deployment.expires_at && new Date(deployment.expires_at) < new Date()) {
     return NextResponse.redirect(new URL('/_system/expired', request.url))
+  }
+
+  // ── Robots.txt serving (S39) ───────────────────────────────────────
+  if (requestedPath === 'robots.txt' && deployment.current_version_id) {
+    // Check if the deployment has a custom robots.txt
+    const customRobots = await resolveFile(
+      deployment.id,
+      deployment.current_version_id,
+      'robots.txt',
+    )
+    if (customRobots) {
+      return serveFile(request, deployment, customRobots, 200)
+    }
+    // Generate synthetic robots.txt based on allow_indexing
+    const body = generateRobotsTxt(deployment.allow_indexing)
+    return new NextResponse(body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600',
+      },
+    })
   }
 
   if (deployment.password_hash) {
@@ -152,7 +279,32 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   if (!file) {
-    // Try deployment-level custom 404.html (S38 will expand this)
+    // ── dropsites.json redirect rules (S38) ─────────────────────────
+    try {
+      const config = await loadDropsitesConfig(
+        deployment.id,
+        deployment.current_version_id,
+      )
+      if (config?.redirects?.length) {
+        const match = matchRedirectRule(
+          config.redirects,
+          requestedPath ? `/${requestedPath}` : '/',
+        )
+        if (match) {
+          const target = match.to.startsWith('/')
+            ? `/${slug}${match.to}`
+            : match.to
+          return NextResponse.redirect(
+            new URL(target, request.url),
+            match.status ?? 301,
+          )
+        }
+      }
+    } catch {
+      // Non-fatal — skip redirect check
+    }
+
+    // Try deployment-level custom 404.html
     const custom404 = await resolveFile(
       deployment.id,
       deployment.current_version_id,

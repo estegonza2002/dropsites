@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { UploadZone } from '@/components/upload/upload-zone'
 import { DeploymentTable } from '@/components/deployments/deployment-table'
 import type { DeploymentListItem } from '@/components/deployments/deployment-table'
+import { DashboardOnboarding } from './dashboard-onboarding'
 
 export const metadata: Metadata = {
   title: 'Dashboard — DropSites',
@@ -46,6 +47,8 @@ export default async function DashboardPage() {
     }
   }
 
+  const hasDeployments = deployments.length > 0
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
       <div>
@@ -54,6 +57,8 @@ export default async function DashboardPage() {
           Drop a file to publish it instantly.
         </p>
       </div>
+
+      <DashboardOnboarding hasDeployments={hasDeployments} />
 
       <UploadZone showSlugInput />
 
