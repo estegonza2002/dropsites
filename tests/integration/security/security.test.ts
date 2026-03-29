@@ -304,14 +304,13 @@ describe('Slug redirects', () => {
   })
 
   it('returns new slug when redirect exists', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: { new_slug: 'new-site', new_namespace: null },
+    const mockMaybeSingle = vi.fn().mockResolvedValue({
+      data: { new_slug: 'new-site' },
       error: null,
     })
-    const mockLimit = vi.fn().mockReturnValue({ single: mockSingle })
-    const mockGt = vi.fn().mockReturnValue({ limit: mockLimit })
-    const mockIs = vi.fn().mockReturnValue({ gt: mockGt })
-    const mockEq = vi.fn().mockReturnValue({ is: mockIs })
+    const mockLimit = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle })
+    const mockGte = vi.fn().mockReturnValue({ limit: mockLimit })
+    const mockEq = vi.fn().mockReturnValue({ gte: mockGte })
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
     const mockFrom = vi.fn().mockReturnValue({ select: mockSelect })
 
@@ -322,18 +321,17 @@ describe('Slug redirects', () => {
     const { resolveSlugRedirect } = await import('@/lib/serving/redirect')
     const result = await resolveSlugRedirect('old-site')
 
-    expect(result).toEqual({ newSlug: 'new-site', newNamespace: null })
+    expect(result).toEqual({ newSlug: 'new-site' })
   })
 
   it('returns null when no redirect exists', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
+    const mockMaybeSingle = vi.fn().mockResolvedValue({
       data: null,
-      error: { code: 'PGRST116' },
+      error: null,
     })
-    const mockLimit = vi.fn().mockReturnValue({ single: mockSingle })
-    const mockGt = vi.fn().mockReturnValue({ limit: mockLimit })
-    const mockIs = vi.fn().mockReturnValue({ gt: mockGt })
-    const mockEq = vi.fn().mockReturnValue({ is: mockIs })
+    const mockLimit = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle })
+    const mockGte = vi.fn().mockReturnValue({ limit: mockLimit })
+    const mockEq = vi.fn().mockReturnValue({ gte: mockGte })
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
     const mockFrom = vi.fn().mockReturnValue({ select: mockSelect })
 

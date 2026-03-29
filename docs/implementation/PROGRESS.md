@@ -105,10 +105,10 @@ depends_on:
 - [x] **S40** — Cookie banner, consent recording, cookie policy page — 2026-03-29
 
 ### M1.22 — Accessibility
-- [ ] **S41** — WCAG 2.1 AA pass, keyboard navigation, screen reader, axe audit
+- [x] **S41** — WCAG 2.1 AA pass, keyboard navigation, screen reader, axe audit — 2026-03-29
 
 ### M1.23 — Onboarding
-- [ ] **S42** — Onboarding checklist, celebration modal, trial prompts, empty states
+- [x] **S42** — Onboarding checklist, celebration modal, trial prompts, empty states — 2026-03-29
 
 ### M1.24 — Team SSO
 - [x] **S43** — Workspace OIDC config, SSO UI, SSO redirect — 2026-03-29
