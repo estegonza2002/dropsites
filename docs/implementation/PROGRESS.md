@@ -78,10 +78,10 @@ depends_on:
 - [x] **S31** — Audit log writer, admin usage panel, admin CSV export — 2026-03-29
 
 ### M1.13 — Performance
-- [ ] **S32** — Compression, cache headers, CDN invalidation, image optimization, lazy loading, Lighthouse pass
+- [x] **S32** — Compression, cache headers, CDN invalidation, image optimization, lazy loading, Lighthouse pass — 2026-03-29
 
 ### M1.14 — Security Review
-- [ ] **S33** — CSP headers, path traversal prevention, CSRF, XSS, SQL injection review, OWASP ZAP
+- [x] **S33** — CSP headers, path traversal prevention, CSRF, XSS, SQL injection review, OWASP ZAP — 2026-03-29
 
 ### M1.15 — Self-Hosted
 - [x] **S34** — Self-hosted runbook, validate-config script, health endpoint enhancements — 2026-03-29
