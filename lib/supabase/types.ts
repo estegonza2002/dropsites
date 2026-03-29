@@ -161,6 +161,13 @@ type BandwidthDailyRow = {
   request_count: number
 }
 
+type EditorLockRow = {
+  deployment_id: string
+  user_id: string
+  opened_at: string
+  expires_at: string | null
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -272,6 +279,17 @@ export type Database = {
         Row: BandwidthDailyRow
         Insert: BandwidthDailyRow
         Update: Partial<BandwidthDailyRow>
+        Relationships: []
+      }
+      editor_locks: {
+        Row: EditorLockRow
+        Insert: {
+          deployment_id: string
+          user_id: string
+          opened_at?: string
+          expires_at?: string | null
+        }
+        Update: Partial<EditorLockRow>
         Relationships: []
       }
       slug_redirects: {

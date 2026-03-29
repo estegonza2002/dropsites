@@ -56,7 +56,7 @@ depends_on:
 
 ### M1.7 — Code Editor
 - [ ] **S21** — CodeMirror editor, file tree, save/publish, diff summary, auto-save draft
-- [ ] **S22** — Editor locks, conflict detection, resolution options
+- [x] **S22** — Editor locks, conflict detection, resolution options — 2026-03-29
 
 ### M1.8 — Auto-Navigation Widget
 - [ ] **S23** — Navigation detection, widget JS, page title inference, dropsites.json parsing
