@@ -40,8 +40,43 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return new NextResponse('Not Found', { status: 404 })
   }
 
+  const autoNavInject = request.headers.get('x-auto-nav-inject')
+
   try {
     const { body, contentLength } = await storage.get(BUCKET, storageKey)
+
+    // If we need to inject the auto-nav script, we must buffer the HTML
+    // and inject before </body>. Only applies to HTML responses.
+    if (autoNavInject && contentType.startsWith('text/html')) {
+      const chunks: Buffer[] = []
+      for await (const chunk of body) {
+        chunks.push(Buffer.from(chunk))
+      }
+      let html = Buffer.concat(chunks).toString('utf-8')
+
+      // Inject before </body> if present, otherwise append
+      const bodyCloseIdx = html.lastIndexOf('</body>')
+      if (bodyCloseIdx !== -1) {
+        html =
+          html.slice(0, bodyCloseIdx) +
+          '\n' +
+          autoNavInject +
+          '\n' +
+          html.slice(bodyCloseIdx)
+      } else {
+        html += '\n' + autoNavInject
+      }
+
+      const encoded = new TextEncoder().encode(html)
+      return new NextResponse(encoded, {
+        status: responseStatus,
+        headers: {
+          'Content-Type': contentType,
+          'Content-Length': String(encoded.byteLength),
+        },
+      })
+    }
+
     const webStream = nodeReadableToWebStream(body)
 
     const headers: Record<string, string> = {

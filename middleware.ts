@@ -3,6 +3,13 @@ import { resolveDeployment, resolveFile } from '@/lib/serving/resolve'
 import { getServingHeaders } from '@/lib/serving/headers'
 import { verifyToken } from '@/lib/serving/password'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
+import {
+  detectMultiPageDeployment,
+  extractPageList,
+  getDeploymentHtmlFiles,
+  loadDropsitesConfig,
+  buildNavScriptTag,
+} from '@/lib/serving/auto-nav'
 
 // Paths handled by the App Router — pass straight through
 const PLATFORM_PREFIXES = new Set([
@@ -165,7 +172,35 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     })
   }
 
-  return serveFile(request, deployment, file, 200)
+  // ── Auto-navigation injection ──────────────────────────────────────
+  let autoNavScript: string | null = null
+  const isHtml = /\.(html|htm)$/i.test(effectivePath)
+
+  if (isHtml && deployment.auto_nav_enabled && deployment.current_version_id) {
+    try {
+      const [htmlFiles, dropsitesConfig] = await Promise.all([
+        getDeploymentHtmlFiles(
+          deployment.id,
+          deployment.current_version_id,
+        ),
+        loadDropsitesConfig(
+          deployment.id,
+          deployment.current_version_id,
+        ),
+      ])
+
+      if (detectMultiPageDeployment(htmlFiles)) {
+        const pages = extractPageList(htmlFiles, dropsitesConfig)
+        if (pages.length > 1) {
+          autoNavScript = buildNavScriptTag(pages, effectivePath, slug)
+        }
+      }
+    } catch {
+      // Non-fatal — skip auto-nav if detection fails
+    }
+  }
+
+  return serveFile(request, deployment, file, 200, autoNavScript)
 }
 
 function serveFile(
@@ -173,6 +208,7 @@ function serveFile(
   deployment: Parameters<typeof getServingHeaders>[0],
   file: Parameters<typeof getServingHeaders>[1],
   status: number,
+  autoNavScript?: string | null,
 ): NextResponse {
   const servingHeaders = getServingHeaders(deployment, file)
 
@@ -183,6 +219,10 @@ function serveFile(
   requestHeaders.set('x-etag', file.sha256_hash)
   requestHeaders.set('x-serve-secret', INTERNAL_SERVE_SECRET)
   requestHeaders.set('x-response-status', String(status))
+
+  if (autoNavScript) {
+    requestHeaders.set('x-auto-nav-inject', autoNavScript)
+  }
 
   const serveUrl = new URL('/_serve', request.url)
   const response = NextResponse.rewrite(serveUrl, {
