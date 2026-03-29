@@ -6,6 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { TopNav } from '@/components/layout/top-nav'
 import { VerifyEmailBanner } from '@/components/auth/verify-email-banner'
+import { TrialBanner } from '@/components/onboarding/trial-banner'
+import { getTrialInfo } from '@/lib/auth/provision'
 import type { WorkspaceRow } from '@/lib/auth/types'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -46,12 +48,20 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const isEmailUnverified = !user.email_confirmed_at
 
+  // Fetch trial info for the current workspace
+  const trialInfo = currentWorkspaceId
+    ? await getTrialInfo(currentWorkspaceId)
+    : { isTrial: false, daysLeft: 0, trialEndsAt: null }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar user={user} workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopNav user={user} workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
         {isEmailUnverified && <VerifyEmailBanner />}
+        {trialInfo.isTrial && trialInfo.trialEndsAt && (
+          <TrialBanner daysLeft={trialInfo.daysLeft} trialEndsAt={trialInfo.trialEndsAt} />
+        )}
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>

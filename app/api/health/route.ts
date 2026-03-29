@@ -10,6 +10,7 @@ interface HealthResponse {
   services: {
     database: ServiceStatus
     storage: ServiceStatus
+    email: ServiceStatus
   }
 }
 
@@ -52,14 +53,42 @@ async function checkStorage(): Promise<ServiceStatus> {
   }
 }
 
+async function checkEmail(): Promise<ServiceStatus> {
+  const apiKey = process.env.RESEND_API_KEY
+
+  if (!apiKey) {
+    // Email not configured — not a critical service, report healthy
+    return 'healthy'
+  }
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    const res = await fetch('https://api.resend.com/domains', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+
+    if (res.ok) return 'healthy'
+    if (res.status === 401) return 'down'
+    return 'degraded'
+  } catch {
+    return 'down'
+  }
+}
+
 export async function GET(): Promise<NextResponse<HealthResponse>> {
-  const [database, storage] = await Promise.all([
+  const [database, storage, email] = await Promise.all([
     checkDatabase(),
     checkStorage(),
+    checkEmail(),
   ])
 
-  const allHealthy = database === 'healthy' && storage === 'healthy'
-  const anyDown = database === 'down' || storage === 'down'
+  const statuses = [database, storage, email]
+  const allHealthy = statuses.every((s) => s === 'healthy')
+  const anyDown = statuses.some((s) => s === 'down')
 
   const status: ServiceStatus = allHealthy
     ? 'healthy'
@@ -71,7 +100,7 @@ export async function GET(): Promise<NextResponse<HealthResponse>> {
     status,
     timestamp: new Date().toISOString(),
     version: process.env.APP_VERSION ?? '0.0.0',
-    services: { database, storage },
+    services: { database, storage, email },
   }
 
   return NextResponse.json(body, { status: status === 'healthy' ? 200 : 503 })

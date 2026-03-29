@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "validate:config": "tsx scripts/validate-config.ts",
     "validate": "pnpm validate:tokens && pnpm validate:docs",
     "prepare": "husky"
   },

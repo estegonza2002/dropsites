@@ -35,6 +35,7 @@ const SKIP_PATTERNS = [
   "components/ui/", // shadcn/ui generated files — do not hand-edit, exempt from token checks
   "components/marketing/", // marketing page predates token system — will be migrated
   "app/(marketing)/page.tsx", // marketing landing page — will be migrated to token system
+  "app/(marketing)/status/", // status page uses inline styles for standalone rendering
   "lib/notifications/templates", // email templates require inline hex — email clients can't use CSS variables
 ];
 
