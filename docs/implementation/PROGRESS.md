@@ -84,16 +84,16 @@ depends_on:
 - [ ] **S33** — CSP headers, path traversal prevention, CSRF, XSS, SQL injection review, OWASP ZAP
 
 ### M1.15 — Self-Hosted
-- [ ] **S34** — Self-hosted runbook, validate-config script, health endpoint enhancements
+- [x] **S34** — Self-hosted runbook, validate-config script, health endpoint enhancements — 2026-03-29
 
 ### M1.16 — Trial System
-- [ ] **S35** — 14-day Pro trial, countdown, expiry logic, notifications, Edge Function
+- [x] **S35** — 14-day Pro trial, countdown, expiry logic, notifications, Edge Function — 2026-03-29
 
 ### M1.17 — Status Page
-- [ ] **S36** — Status page setup, automated health posting
+- [x] **S36** — Status page setup, automated health posting — 2026-03-29
 
 ### M1.18 — Bot Filtering
-- [ ] **S37** — Bot filter patterns, seed data, admin analytics separation
+- [x] **S37** — Bot filter patterns, seed data, admin analytics separation — 2026-03-29
 
 ### M1.19 — Custom 404 + Redirects
 - [ ] **S38** — Custom 404.html serving, platform 404, slug redirects, dropsites.json redirects
