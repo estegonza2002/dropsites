@@ -107,6 +107,8 @@ type WorkspaceRow = {
   trial_ends_at: string | null
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
+  grace_period_ends_at: string | null
+  previous_limit_profile: string | null
   data_region: string
   white_label_config: Record<string, unknown> | null
   sso_config: Record<string, unknown> | null
@@ -132,6 +134,51 @@ type AnalyticsEventRow = {
   created_at: string
   referrer_domain: string | null
   ua_class: string | null
+  token_id: string | null
+  country_code: string | null
+  device_class: string | null
+  browser_family: string | null
+}
+
+type AnalyticsShareTokenRow = {
+  id: string
+  deployment_id: string
+  token: string
+  created_by: string
+  expires_at: string | null
+  created_at: string
+}
+
+type CustomDomainRow = {
+  id: string
+  deployment_id: string
+  workspace_id: string
+  domain: string
+  cname_target: string
+  txt_record: string
+  status: 'pending' | 'verified' | 'error'
+  tls_cert: string | null
+  tls_key: string | null
+  tls_expires_at: string | null
+  verified_at: string | null
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}
+
+type AccessTokenRow = {
+  id: string
+  deployment_id: string
+  name: string
+  token: string
+  max_views: number | null
+  view_count: number
+  last_seen_at: string | null
+  expires_at: string | null
+  revoked_at: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
 }
 
 type LimitProfileRow = {
@@ -159,6 +206,64 @@ type BandwidthDailyRow = {
   date: string
   bytes_served: number
   request_count: number
+}
+
+type ApiKeyRow = {
+  id: string
+  workspace_id: string
+  user_id: string
+  name: string
+  prefix: string
+  key_hash: string
+  last_used_at: string | null
+  expires_at: string | null
+  revoked_at: string | null
+  created_at: string
+}
+
+type WebhookEndpointRow = {
+  id: string
+  workspace_id: string
+  url: string
+  secret: string
+  events: string[]
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+type WebhookDeliveryRow = {
+  id: string
+  endpoint_id: string
+  event_type: string
+  status_code: number | null
+  response_body: string | null
+  response_time_ms: number
+  attempt_number: number
+  success: boolean
+  error: string | null
+  created_at: string
+}
+
+type BetaInviteRow = {
+  id: string
+  email: string
+  invite_code: string
+  status: 'pending' | 'accepted' | 'expired'
+  notes: string | null
+  invited_at: string
+  accepted_at: string | null
+  created_by: string | null
+}
+
+type BetaFeedbackRow = {
+  id: string
+  user_id: string | null
+  category: 'bug' | 'ux' | 'missing-feature' | 'positive'
+  body: string
+  page_url: string | null
+  severity: 'p0' | 'p1' | 'p2' | 'p3' | null
+  created_at: string
 }
 
 type EditorLockRow = {
@@ -263,6 +368,43 @@ export type Database = {
         Update: Partial<AnalyticsEventRow>
         Relationships: []
       }
+      analytics_share_tokens: {
+        Row: AnalyticsShareTokenRow
+        Insert: {
+          deployment_id: string
+          token: string
+          created_by: string
+          expires_at?: string | null
+        }
+        Update: Partial<AnalyticsShareTokenRow>
+        Relationships: []
+      }
+      custom_domains: {
+        Row: CustomDomainRow
+        Insert: {
+          deployment_id: string
+          workspace_id: string
+          domain: string
+          cname_target: string
+          txt_record: string
+          status?: 'pending' | 'verified' | 'error'
+        }
+        Update: Partial<CustomDomainRow>
+        Relationships: []
+      }
+      access_tokens: {
+        Row: AccessTokenRow
+        Insert: {
+          deployment_id: string
+          name: string
+          token: string
+          created_by: string
+          max_views?: number | null
+          expires_at?: string | null
+        }
+        Update: Partial<AccessTokenRow>
+        Relationships: []
+      }
       audit_log: {
         Row: AuditLogRow
         Insert: Omit<AuditLogRow, 'id' | 'created_at'>
@@ -323,6 +465,19 @@ export type Database = {
         }>
         Relationships: []
       }
+      api_keys: {
+        Row: ApiKeyRow
+        Insert: {
+          workspace_id: string
+          user_id: string
+          name: string
+          prefix: string
+          key_hash: string
+          expires_at?: string | null
+        }
+        Update: Partial<ApiKeyRow>
+        Relationships: []
+      }
       abuse_reports: {
         Row: {
           id: string
@@ -352,6 +507,109 @@ export type Database = {
           resolved_at: string | null
           resolution_notes: string | null
         }>
+        Relationships: []
+      }
+      cookie_consents: {
+        Row: {
+          id: string
+          user_agent: string | null
+          ip_hash: string | null
+          consent_version: string
+          consented_at: string
+        }
+        Insert: {
+          user_agent?: string | null
+          ip_hash?: string | null
+          consent_version: string
+        }
+        Update: Record<string, never>
+        Relationships: []
+      }
+      bot_filters: {
+        Row: {
+          id: string
+          pattern: string
+          category: string | null
+          active: boolean
+          created_at: string
+        }
+        Insert: {
+          pattern: string
+          category?: string | null
+          active?: boolean
+        }
+        Update: Partial<{ pattern: string; category: string | null; active: boolean }>
+        Relationships: []
+      }
+      changelog_entries: {
+        Row: {
+          id: string
+          title: string
+          content: string
+          is_breaking: boolean
+          published_at: string
+        }
+        Insert: {
+          title: string
+          content: string
+          is_breaking?: boolean
+          published_at?: string
+        }
+        Update: Partial<{ title: string; content: string; is_breaking: boolean; published_at: string }>
+        Relationships: []
+      }
+      webhook_endpoints: {
+        Row: WebhookEndpointRow
+        Insert: {
+          workspace_id: string
+          url: string
+          secret: string
+          events: string[]
+          is_active?: boolean
+        }
+        Update: Partial<WebhookEndpointRow>
+        Relationships: []
+      }
+      webhook_deliveries: {
+        Row: WebhookDeliveryRow
+        Insert: {
+          endpoint_id: string
+          event_type: string
+          status_code?: number | null
+          response_body?: string | null
+          response_time_ms: number
+          attempt_number: number
+          success: boolean
+          error?: string | null
+        }
+        Update: Partial<WebhookDeliveryRow>
+        Relationships: []
+      }
+      beta_invites: {
+        Row: BetaInviteRow
+        Insert: {
+          email: string
+          invite_code?: string
+          status?: 'pending' | 'accepted' | 'expired'
+          notes?: string | null
+          invited_at?: string
+          accepted_at?: string | null
+          created_by?: string | null
+        }
+        Update: Partial<BetaInviteRow>
+        Relationships: []
+      }
+      beta_feedback: {
+        Row: BetaFeedbackRow
+        Insert: {
+          user_id?: string | null
+          category: 'bug' | 'ux' | 'missing-feature' | 'positive'
+          body: string
+          page_url?: string | null
+          severity?: 'p0' | 'p1' | 'p2' | 'p3' | null
+          created_at?: string
+        }
+        Update: Partial<BetaFeedbackRow>
         Relationships: []
       }
     }

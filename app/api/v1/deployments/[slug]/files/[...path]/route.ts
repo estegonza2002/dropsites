@@ -79,7 +79,7 @@ export async function GET(_req: NextRequest, ctx: RouteContext): Promise<NextRes
   }
 }
 
-// PATCH /api/v1/deployments/[slug]/files/[...path] — update single file
+// PATCH /api/v1/deployments/[slug]/files/[...path] — update single file (creates new version)
 export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { slug, path: pathSegments } = await ctx.params
   const filePath = pathSegments.join('/')
@@ -101,69 +101,56 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     return NextResponse.json({ error: 'No version published' }, { status: 404 })
   }
 
-  let body: { content: string }
+  // Accept either multipart/form-data or JSON body
+  let contentBuffer: Buffer
+
+  const contentType = req.headers.get('content-type') ?? ''
+  if (contentType.includes('multipart/form-data')) {
+    let formData: FormData
+    try {
+      formData = await req.formData()
+    } catch {
+      return NextResponse.json({ error: 'Invalid multipart form data' }, { status: 400 })
+    }
+    const fileEntry = formData.get('file')
+    if (!fileEntry || !(fileEntry instanceof File)) {
+      return NextResponse.json({ error: 'Missing required field: file' }, { status: 400 })
+    }
+    contentBuffer = Buffer.from(await fileEntry.arrayBuffer())
+  } else {
+    let body: { content: string }
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+    if (typeof body.content !== 'string') {
+      return NextResponse.json({ error: 'Missing required field: content' }, { status: 400 })
+    }
+    contentBuffer = Buffer.from(body.content, 'utf-8')
+  }
+
   try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  if (typeof body.content !== 'string') {
-    return NextResponse.json({ error: 'Missing required field: content' }, { status: 400 })
-  }
-
-  const admin = createAdminClient()
-
-  // Get the file record to find storage key
-  const { data: fileRecord } = await admin
-    .from('deployment_files')
-    .select('id, storage_key, mime_type')
-    .eq('deployment_id', deployment.id)
-    .eq('version_id', deployment.current_version_id)
-    .eq('file_path', filePath)
-    .single()
-
-  if (!fileRecord) {
-    return NextResponse.json({ error: 'File not found' }, { status: 404 })
-  }
-
-  const contentBuffer = Buffer.from(body.content, 'utf-8')
-
-  // Upload to storage (overwrite)
-  try {
-    await storage.upload(BUCKET, fileRecord.storage_key, contentBuffer, fileRecord.mime_type)
-  } catch {
-    return NextResponse.json({ error: 'Failed to write file to storage' }, { status: 500 })
-  }
-
-  // Update file size in DB
-  const { createHash } = await import('crypto')
-  const hash = createHash('sha256').update(contentBuffer).digest('hex')
-
-  await admin
-    .from('deployment_files')
-    .update({
-      size_bytes: contentBuffer.length,
-      sha256_hash: hash,
+    const { patchDeploymentFile } = await import('@/lib/upload/patch')
+    const result = await patchDeploymentFile(
+      deployment.id,
+      filePath,
+      contentBuffer,
+      user.id,
+    )
+    return NextResponse.json({
+      path: result.filePath,
+      size: result.size,
+      hash: result.hash,
+      version_id: result.versionId,
+      version_number: result.versionNumber,
     })
-    .eq('id', fileRecord.id)
-
-  // Update deployment storage_bytes
-  const { data: allFiles } = await admin
-    .from('deployment_files')
-    .select('size_bytes')
-    .eq('deployment_id', deployment.id)
-    .eq('version_id', deployment.current_version_id)
-
-  const totalBytes = (allFiles ?? []).reduce((sum, f) => sum + f.size_bytes, 0)
-  await admin
-    .from('deployments')
-    .update({ storage_bytes: totalBytes, updated_at: new Date().toISOString() })
-    .eq('id', deployment.id)
-
-  return NextResponse.json({
-    path: filePath,
-    size: contentBuffer.length,
-    hash,
-  })
+  } catch (err) {
+    if (err && typeof err === 'object' && 'status' in err && 'message' in err) {
+      const patchErr = err as { status: number; message: string }
+      return NextResponse.json({ error: patchErr.message }, { status: patchErr.status })
+    }
+    console.error('PATCH file error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

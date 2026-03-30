@@ -1,110 +1,153 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserRole } from '@/lib/auth/permissions'
-
-type RouteContext = { params: Promise<{ id: string; userId: string }> }
+import { withApiAuth } from '@/lib/api/middleware'
+import { apiSuccess, apiError } from '@/lib/api/response'
+import type { ApiAuth } from '@/lib/api/auth'
 
 // PATCH /api/v1/workspaces/[id]/members/[userId] — update member role
-export async function PATCH(request: NextRequest, context: RouteContext): Promise<NextResponse> {
-  const { id, userId: targetUserId } = await context.params
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+export const PATCH = withApiAuth(async (req: NextRequest, ctx, auth: ApiAuth) => {
+  const { id: workspaceId, userId: targetUserId } = await ctx.params
 
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const callerRole = await getUserRole(auth.userId, workspaceId)
+  if (!callerRole) return apiError('Not found', 'not_found', 404)
+  if (callerRole !== 'owner') {
+    return apiError('Only workspace owners can update member roles', 'forbidden', 403)
   }
 
-  const role = await getUserRole(user.id, id)
-  if (role !== 'owner') {
-    return NextResponse.json({ error: 'Only owners can change roles' }, { status: 403 })
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return apiError('Invalid JSON body', 'invalid_body', 400)
+  }
+
+  const newRole = typeof body.role === 'string' ? body.role : ''
+  if (!['owner', 'publisher', 'viewer'].includes(newRole)) {
+    return apiError(
+      'role must be "owner", "publisher", or "viewer"',
+      'invalid_field',
+      400,
+    )
   }
 
   // Cannot change own role
-  if (targetUserId === user.id) {
-    return NextResponse.json({ error: 'Cannot change your own role' }, { status: 400 })
-  }
-
-  let body: { role?: string }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  const newRole = body.role as 'publisher' | 'viewer' | undefined
-  if (!newRole || !['publisher', 'viewer'].includes(newRole)) {
-    return NextResponse.json({ error: 'Role must be publisher or viewer' }, { status: 400 })
+  if (targetUserId === auth.userId) {
+    return apiError('Cannot change your own role', 'self_role_change', 400)
   }
 
   const admin = createAdminClient()
-  const { data: member, error } = await admin
+
+  // Find the member
+  const { data: member, error: findError } = await admin
     .from('workspace_members')
-    .update({ role: newRole })
-    .eq('workspace_id', id)
+    .select('id, role')
+    .eq('workspace_id', workspaceId)
     .eq('user_id', targetUserId)
-    .select('id, user_id, email, role')
+    .not('accepted_at', 'is', null)
+    .maybeSingle()
+
+  if (findError || !member) {
+    return apiError('Member not found', 'not_found', 404)
+  }
+
+  const previousRole = member.role
+
+  const { data: updated, error: updateError } = await admin
+    .from('workspace_members')
+    .update({ role: newRole as 'owner' | 'publisher' | 'viewer' })
+    .eq('id', member.id)
+    .select('id, user_id, email, role, accepted_at')
     .single()
 
-  if (error || !member) {
-    return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+  if (updateError || !updated) {
+    console.error('Update member role error:', updateError)
+    return apiError('Failed to update member role', 'update_failed', 500)
   }
 
-  return NextResponse.json({ member })
-}
+  await admin.from('audit_log').insert({
+    action: 'workspace.member_role_change',
+    actor_id: auth.userId,
+    target_id: member.id,
+    target_type: 'workspace_member',
+    details: {
+      workspace_id: workspaceId,
+      user_id: targetUserId,
+      previous_role: previousRole,
+      new_role: newRole,
+    },
+  })
+
+  return apiSuccess(updated)
+})
 
 // DELETE /api/v1/workspaces/[id]/members/[userId] — remove member
-export async function DELETE(_request: NextRequest, context: RouteContext): Promise<NextResponse> {
-  const { id, userId: targetUserId } = await context.params
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+export const DELETE = withApiAuth(async (_req: NextRequest, ctx, auth: ApiAuth) => {
+  const { id: workspaceId, userId: targetUserId } = await ctx.params
 
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const callerRole = await getUserRole(auth.userId, workspaceId)
+  if (!callerRole) return apiError('Not found', 'not_found', 404)
+
+  // Owners can remove anyone; members can remove themselves
+  if (callerRole !== 'owner' && targetUserId !== auth.userId) {
+    return apiError('Only workspace owners can remove other members', 'forbidden', 403)
   }
 
-  const role = await getUserRole(user.id, id)
+  // Cannot remove yourself if you are the sole owner
+  if (targetUserId === auth.userId && callerRole === 'owner') {
+    const admin = createAdminClient()
+    const { count } = await admin
+      .from('workspace_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', workspaceId)
+      .eq('role', 'owner')
+      .not('accepted_at', 'is', null)
 
-  // Owners can remove anyone (except themselves); accepted members can remove themselves
-  const isSelf = targetUserId === user.id
-  if (!role) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-  if (!isSelf && role !== 'owner') {
-    return NextResponse.json({ error: 'Only owners can remove members' }, { status: 403 })
+    if ((count ?? 0) <= 1) {
+      return apiError(
+        'Cannot remove the last owner. Transfer ownership first.',
+        'last_owner',
+        400,
+      )
+    }
   }
 
-  // Cannot remove the workspace owner
   const admin = createAdminClient()
-  const { data: ws } = await admin.from('workspaces').select('owner_id').eq('id', id).single()
-  if (ws?.owner_id === targetUserId) {
-    return NextResponse.json({ error: 'Cannot remove workspace owner' }, { status: 400 })
+
+  // Find the member
+  const { data: member, error: findError } = await admin
+    .from('workspace_members')
+    .select('id, role, email')
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', targetUserId)
+    .maybeSingle()
+
+  if (findError || !member) {
+    return apiError('Member not found', 'not_found', 404)
   }
 
-  // Transfer deployments owned by this user to the workspace owner
-  await admin
-    .from('deployments')
-    .update({ owner_id: ws!.owner_id })
-    .eq('workspace_id', id)
-    .eq('owner_id', targetUserId)
-
-  // Remove membership
-  const { error } = await admin
+  const { error: deleteError } = await admin
     .from('workspace_members')
     .delete()
-    .eq('workspace_id', id)
-    .eq('user_id', targetUserId)
+    .eq('id', member.id)
 
-  if (error) {
-    console.error('Remove member error:', error)
-    return NextResponse.json({ error: 'Failed to remove member' }, { status: 500 })
+  if (deleteError) {
+    console.error('Remove member error:', deleteError)
+    return apiError('Failed to remove member', 'delete_failed', 500)
   }
 
-  return NextResponse.json({ success: true })
-}
+  await admin.from('audit_log').insert({
+    action: 'workspace.member_remove',
+    actor_id: auth.userId,
+    target_id: member.id,
+    target_type: 'workspace_member',
+    details: {
+      workspace_id: workspaceId,
+      user_id: targetUserId,
+      role: member.role,
+      email: member.email,
+    },
+  })
+
+  return new Response(null, { status: 204 }) as unknown as import('next/server').NextResponse
+})

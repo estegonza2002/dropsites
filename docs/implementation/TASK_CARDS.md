@@ -3417,3 +3417,376 @@ pnpm playwright test
 ```
 
 Phase 2 GA gate requires: all tests pass + OWASP ZAP zero high/critical + third-party pentest sign-off + backup restore verification.
+
+---
+
+## Phase 3 Task Cards
+
+> Phase 3 is the MCP connector launch: build the server, verify it end-to-end, write the setup guide, run a closed beta, and GA.
+
+---
+
+## S74 — MCP Server
+
+**Milestone:** M3.1 (MCP Server)
+**Depends on:** S45, S46, S69
+
+### What to Build
+
+Build a Model Context Protocol (MCP) server that lets Claude Desktop, claude.ai, and any MCP-compatible AI client publish DropSites deployments by calling a tool.
+
+1. Create `packages/mcp/` directory structure:
+   - `packages/mcp/package.json`:
+     - Name: `@dropsites/mcp`
+     - Binary: `dropsites-mcp`
+     - Dependencies: `@modelcontextprotocol/sdk`, `@dropsites/sdk`, `form-data`, `node-fetch`
+     - Scripts: `build`, `typecheck`
+   - `packages/mcp/tsconfig.json` — targets ESNext, module ESNext, rootDir `src/`, outDir `dist/`
+2. Create `packages/mcp/src/index.ts` — MCP server entry point:
+   - Reads `DROPSITES_API_KEY` and `DROPSITES_BASE_URL` from `process.env`
+   - Creates `DropSitesClient` from `@dropsites/sdk`
+   - Registers all tools (see step 3)
+   - Starts `StdioServerTransport` — required for Claude Desktop / claude.ai connector protocol
+3. Create `packages/mcp/src/tools/deploy.ts` — `deploy_site` tool:
+   - Input schema:
+     - `path` (string, required): local filesystem path to a file or directory
+     - `slug` (string, optional): desired slug — auto-generated if omitted
+     - `workspace_id` (string, optional): target workspace — defaults to user's personal workspace
+     - `title` (string, optional): human-readable label stored in deployment metadata
+   - Implementation:
+     - Stat `path`: if directory, ZIP it in memory using `archiver`; if file, use directly
+     - Call `client.deploy(blob, { slug, workspaceId, title })`
+     - Return tool result with `url`, `slug`, `created_at`, and `size_bytes`
+   - Error handling: surface clear messages for auth failure, quota exceeded, invalid path
+4. Create `packages/mcp/src/tools/list.ts` — `list_sites` tool:
+   - Input schema: `workspace_id` (string, optional), `limit` (number, optional, default 20)
+   - Returns array of `{ slug, url, title, created_at, status }`
+5. Create `packages/mcp/src/tools/delete.ts` — `delete_site` tool:
+   - Input schema: `slug` (string, required)
+   - Calls `client.delete(slug)`, returns confirmation
+6. Create `packages/mcp/src/tools/update.ts` — `update_site` tool:
+   - Input schema: `slug` (string, required), `path` (string, required)
+   - Zips directory or uses file, calls `client.update(slug, blob)`
+   - Returns updated `url` and `updated_at`
+7. Create `packages/mcp/src/server.ts`:
+   - `createServer(apiKey: string, baseUrl?: string): McpServer`
+   - Registers all four tools
+   - Exported for use in tests
+8. Create `packages/mcp/README.md`:
+   - Quick start: `npx @dropsites/mcp` with env vars
+   - Claude Desktop config snippet (see S76 guide for full detail)
+   - Tool reference table
+9. Add `packages/mcp` to root `package.json` workspaces
+10. Build the SDK first: `pnpm --filter @dropsites/sdk build` before building MCP
+
+### Gate
+
+- `npx @dropsites/mcp` starts without error when `DROPSITES_API_KEY` is set
+- `deploy_site` tool called with a local directory path returns a live URL
+- `list_sites` returns deployments for the authenticated user
+- `delete_site` removes a deployment by slug
+- `update_site` overwrites a deployment and returns the same URL
+- All four tools appear in MCP tool discovery (`tools/list` request)
+- Package builds and type-checks cleanly
+
+### Files Created
+
+All files under `packages/mcp/`: `package.json`, `tsconfig.json`, `src/index.ts`, `src/server.ts`, `src/tools/deploy.ts`, `src/tools/list.ts`, `src/tools/delete.ts`, `src/tools/update.ts`, `README.md`
+
+### Files Modified
+
+Root `package.json` (workspaces)
+
+---
+
+## S75 — MCP End-to-End Tests
+
+**Milestone:** M3.2 (End-to-end test)
+**Depends on:** S74
+
+### What to Build
+
+Write integration and E2E tests that prove the MCP server works end-to-end: tool call in → live URL out.
+
+1. Create `tests/integration/mcp/mcp-server.test.ts`:
+   - Import `createServer` from `@dropsites/mcp/server`
+   - Mock `@dropsites/sdk` client with `vi.mock`
+   - Test `deploy_site` tool:
+     - T-MCP-01: valid directory path → returns `{ url, slug }`
+     - T-MCP-02: valid single file → returns URL
+     - T-MCP-03: non-existent path → returns error message (not a throw)
+     - T-MCP-04: SDK quota error propagated as tool error content
+     - T-MCP-05: slug collision triggers auto-suffix and returns new slug
+   - Test `list_sites` tool:
+     - T-MCP-06: returns paginated deployment list
+     - T-MCP-07: empty workspace returns empty array, no error
+   - Test `delete_site` tool:
+     - T-MCP-08: known slug → success confirmation
+     - T-MCP-09: unknown slug → clear not-found message
+   - Test `update_site` tool:
+     - T-MCP-10: valid path → returns same URL with new content
+2. Create `tests/e2e/mcp/mcp-e2e.spec.ts` (Playwright, skipped in CI unless `E2E_MCP=true`):
+   - Requires live `DROPSITES_API_KEY` in env
+   - Spawn `dropsites-mcp` as child process with `StdioServerTransport`
+   - Send JSON-RPC `tools/call` for `deploy_site` with a temp directory containing `index.html`
+   - Assert response contains `url` that is HTTP 200 when fetched
+   - Call `delete_site` for cleanup
+3. Create `tests/helpers/mcp-client.ts`:
+   - Helper that spawns MCP server process and sends JSON-RPC messages over stdio
+   - Used by E2E test to avoid raw subprocess JSON-RPC boilerplate
+4. Create `tests/fixtures/mcp/sample-site/index.html`:
+   - Minimal valid HTML: `<!doctype html><html><body><h1>MCP Test Site</h1></body></html>`
+
+### Gate
+
+- All T-MCP-01 through T-MCP-10 unit tests pass
+- E2E test (when `E2E_MCP=true`) deploys real site and receives HTTP 200 from returned URL
+- Tests run in under 10 seconds (unit) / 30 seconds (E2E)
+- Zero TypeScript errors in test files
+
+### Files Created
+
+`tests/integration/mcp/mcp-server.test.ts`, `tests/e2e/mcp/mcp-e2e.spec.ts`, `tests/helpers/mcp-client.ts`, `tests/fixtures/mcp/sample-site/index.html`
+
+---
+
+## S76 — MCP Connector Setup Guide
+
+**Milestone:** M3.3 (Connector config guide)
+**Depends on:** S74
+
+### What to Build
+
+Write the complete setup documentation so non-technical users can connect DropSites to Claude Desktop and claude.ai in under five minutes.
+
+1. Create `docs/mcp-connector.md`:
+   - Introduction: what the connector does (Claude can publish sites for you)
+   - Prerequisites: DropSites account, API key, Node.js 20+
+   - **Section A — Claude Desktop setup:**
+     - Where to find `claude_desktop_config.json` on macOS and Windows
+     - Exact JSON snippet to add under `mcpServers`:
+       ```json
+       {
+         "mcpServers": {
+           "dropsites": {
+             "command": "npx",
+             "args": ["-y", "@dropsites/mcp"],
+             "env": {
+               "DROPSITES_API_KEY": "YOUR_API_KEY_HERE"
+             }
+           }
+         }
+       }
+       ```
+     - Screenshots (placeholder ALT text descriptions for a designer to fill)
+     - How to verify: restart Claude Desktop, type "list my DropSites deployments"
+   - **Section B — claude.ai web interface setup:**
+     - How to add a connector in the claude.ai settings
+     - Server URL and auth method (API key header)
+     - Verification step
+   - **Section C — Tool reference:**
+     - Table: tool name | description | required inputs | example prompt
+     - Covers `deploy_site`, `list_sites`, `delete_site`, `update_site`
+   - **Section D — Example prompts:**
+     - "Deploy the React app in my ~/projects/my-app/dist folder"
+     - "List all my active deployments"
+     - "Update my-site with the latest build from ./dist"
+     - "Delete the old staging deployment"
+   - **Section E — Troubleshooting:**
+     - API key not found → check env var spelling
+     - `npx` not found → install Node.js 20+
+     - Quota exceeded → link to pricing page
+     - Deploy fails silently → check file size limits
+2. Create `app/(marketing)/mcp/page.tsx`:
+   - Marketing landing page for the MCP connector
+   - Hero: "Let Claude publish your sites" with one-liner value prop
+   - Three steps: Get API key → Add to Claude config → Say "deploy this"
+   - Live demo GIF placeholder (with descriptive ALT text)
+   - Code snippet: the `mcpServers` JSON block
+   - Link to full `docs/mcp-connector.md` guide
+   - CTA: "Get your API key" → links to dashboard API key settings
+   - Links from: homepage hero, pricing page, footer
+3. Update `app/(marketing)/page.tsx` (landing page):
+   - Add "Works with Claude" badge / callout in hero section
+   - Link to `/mcp` page
+4. Update footer to include link to `/mcp` under a "Integrations" column
+5. Create `app/(marketing)/mcp/opengraph-image.tsx` (optional, Next.js OG image):
+   - "DropSites × Claude" lock-up for social sharing
+
+### Gate
+
+- `/mcp` page renders at 375px and 1280px without layout issues
+- `mcpServers` JSON snippet is copy-pasteable and syntactically valid
+- Tool reference table is complete and accurate
+- Troubleshooting section covers the four most common failure modes
+- `docs/mcp-connector.md` is linked from the marketing page
+- Footer includes `/mcp` link
+
+### Files Created
+
+`docs/mcp-connector.md`, `app/(marketing)/mcp/page.tsx`, `app/(marketing)/mcp/opengraph-image.tsx`
+
+### Files Modified
+
+`app/(marketing)/page.tsx` (hero callout), marketing footer component
+
+---
+
+## S77 — Closed Beta Infrastructure
+
+**Milestone:** M3.4 (Closed beta)
+**Depends on:** S76
+
+### What to Build
+
+Build the tooling needed to run a 20-user closed beta: invite system, structured feedback collection, and bug triage workflow.
+
+1. Create `supabase/migrations/00031_create_beta_invites.sql`:
+   - Table `beta_invites`:
+     - `id uuid primary key default gen_random_uuid()`
+     - `email text not null unique`
+     - `invite_code text not null unique default substr(md5(random()::text), 1, 12)`
+     - `status text not null default 'pending'` — `pending | accepted | expired`
+     - `notes text` — admin notes on who this person is
+     - `invited_at timestamptz not null default now()`
+     - `accepted_at timestamptz`
+     - `created_by uuid references users(id)`
+   - RLS: admins can read/write all rows; no public access
+2. Create `lib/beta/invites.ts`:
+   - `createInvite(email: string, notes: string, adminId: string): Promise<BetaInvite>`
+   - `acceptInvite(code: string, userId: string): Promise<void>` — sets `status = 'accepted'`
+   - `listInvites(): Promise<BetaInvite[]>`
+   - `isBetaUser(userId: string): Promise<boolean>` — checks `beta_invites.status = 'accepted'`
+3. Create `app/api/v1/admin/beta/invites/route.ts`:
+   - `GET` — list all invites (admin only)
+   - `POST { email, notes }` — create invite, send invite email via Resend
+4. Create `app/api/v1/beta/accept/route.ts`:
+   - `POST { code }` — accept invite for the authenticated user
+   - Returns `{ ok: true }` or `{ error: 'Invalid or expired code' }`
+5. Create `components/admin/beta-invites-panel.tsx`:
+   - Table of invites: email, status, invited date, accepted date, notes
+   - "Add invite" button → email input dialog → sends invite
+   - Copy invite link button
+6. Create `supabase/migrations/00032_create_feedback.sql`:
+   - Table `beta_feedback`:
+     - `id uuid primary key default gen_random_uuid()`
+     - `user_id uuid references users(id)`
+     - `category text` — `bug | ux | missing-feature | positive`
+     - `body text not null`
+     - `page_url text`
+     - `severity text` — `p0 | p1 | p2 | p3`
+     - `created_at timestamptz not null default now()`
+   - RLS: users insert their own; admins read all
+7. Create `lib/beta/feedback.ts`:
+   - `submitFeedback(userId: string, payload: FeedbackPayload): Promise<void>`
+   - `listFeedback(filter?: { category?, severity? }): Promise<BetaFeedback[]>`
+8. Create `app/api/v1/beta/feedback/route.ts`:
+   - `POST` — authenticated user submits feedback
+   - `GET` — admin reads feedback (with optional `?category=&severity=` filters)
+9. Create `components/beta/feedback-button.tsx`:
+   - Floating feedback button visible to beta users only (check `isBetaUser`)
+   - Opens a dialog: category selector, severity (for bugs), free-text body, current URL auto-filled
+   - Submits to `/api/v1/beta/feedback`
+   - Shows on all dashboard pages for beta users
+10. Add `<BetaFeedbackButton>` to dashboard layout (`app/(dashboard)/dashboard/layout.tsx`)
+
+### Gate
+
+- Admin can create invite → email delivered via Resend
+- User can accept invite via unique code
+- `isBetaUser` returns true only after acceptance
+- Feedback button visible on dashboard for beta users, hidden for others
+- Admin can list all feedback with category/severity filters
+- All RLS policies enforce admin-only read for feedback and invites
+
+### Files Created
+
+`supabase/migrations/00031_create_beta_invites.sql`, `supabase/migrations/00032_create_feedback.sql`, `lib/beta/invites.ts`, `lib/beta/feedback.ts`, `app/api/v1/admin/beta/invites/route.ts`, `app/api/v1/beta/accept/route.ts`, `app/api/v1/beta/feedback/route.ts`, `components/admin/beta-invites-panel.tsx`, `components/beta/feedback-button.tsx`
+
+### Files Modified
+
+`app/(dashboard)/dashboard/layout.tsx` (feedback button), admin panel page
+
+---
+
+## S78 — GA Release
+
+**Milestone:** M3.5 (GA Release)
+**Depends on:** S77
+
+### What to Build
+
+Cut the public release: publish the npm package, write the announcement, update all docs to reflect GA status.
+
+1. Publish `@dropsites/mcp` to npm:
+   - Verify `packages/mcp/package.json` has correct `version`, `license`, `repository`, `keywords`
+   - Add `prepublishOnly` script: `pnpm build && pnpm typecheck`
+   - Run `pnpm --filter @dropsites/mcp publish --access public` (record command in release runbook, do not execute automatically)
+   - Publish `@dropsites/sdk` to npm with same pattern
+2. Create `app/(marketing)/blog/mcp-launch/page.tsx`:
+   - Announcement post: "DropSites now works with Claude"
+   - Content structure: problem → solution → demo GIF placeholder → quick start code block → link to `/mcp`
+   - Metadata: `title`, `description`, `og:image`, `publishedAt`
+3. Create `app/(marketing)/blog/page.tsx` (blog index, if not existing):
+   - Lists blog posts with title, date, excerpt
+   - Shows MCP launch post as latest
+4. Update `app/(marketing)/page.tsx` landing page:
+   - Replace beta callout with GA "Works with Claude" section
+   - Show live deployment counter (fetch from `SELECT COUNT(*) FROM deployments` — cached 60s)
+5. Update `README.md`:
+   - Add MCP connector section at top
+   - Link to `/mcp`, `docs/mcp-connector.md`, and npm package
+   - Update badges: build status, npm version, license
+6. Create `docs/changelog/v1.0.md`:
+   - Full changelog for v1.0: Phase 1, Phase 2, and Phase 3 features
+   - Sections: New Features, Improvements, Bug Fixes
+   - Links to relevant PRD sections
+7. Update `app/(marketing)/changelog/page.tsx`:
+   - Add v1.0 entry fetched from DB (seed the `changelog_entries` table with the v1.0 notes)
+8. Create `scripts/release.sh`:
+   - Runbook script (comments only, not executed automatically):
+     - Pre-flight checks: all tests pass, zero open P0/P1 bugs, pentest sign-off recorded
+     - Step 1: tag release `git tag v1.0.0`
+     - Step 2: publish npm packages
+     - Step 3: deploy to production
+     - Step 4: post announcement on blog
+     - Step 5: post to community channels
+9. Create `tests/e2e/smoke/ga-smoke.spec.ts`:
+   - Playwright smoke tests for GA:
+     - Landing page loads under 3s
+     - `/mcp` page renders
+     - `/pricing` page renders
+     - Login page renders
+     - Health endpoint returns 200
+
+### Gate
+
+- `@dropsites/mcp` and `@dropsites/sdk` package.json files are publish-ready (correct metadata, prepublishOnly script)
+- Announcement blog post renders at `/blog/mcp-launch`
+- Landing page shows live deployment counter
+- README updated with MCP section and badges
+- `docs/changelog/v1.0.md` covers all major features
+- GA smoke tests pass (`pnpm playwright test tests/e2e/smoke/`)
+
+### Files Created
+
+`app/(marketing)/blog/mcp-launch/page.tsx`, `app/(marketing)/blog/page.tsx`, `docs/changelog/v1.0.md`, `scripts/release.sh`, `tests/e2e/smoke/ga-smoke.spec.ts`
+
+### Files Modified
+
+`app/(marketing)/page.tsx`, `app/(marketing)/changelog/page.tsx`, `README.md`, `packages/mcp/package.json`, `packages/sdk/package.json`
+
+---
+
+## End of Phase 3 Task Cards
+
+Phase 3 GA gate requires: MCP server published to npm + `npx @dropsites/mcp` works end-to-end + zero P0/P1 bugs from beta + announcement live.
+
+```bash
+# Full Phase 3 verification
+pnpm typecheck
+pnpm test
+pnpm playwright test
+pnpm --filter @dropsites/mcp typecheck
+pnpm --filter @dropsites/sdk typecheck
+```

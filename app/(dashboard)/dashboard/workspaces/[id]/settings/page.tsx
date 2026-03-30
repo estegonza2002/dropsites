@@ -23,7 +23,7 @@ export default async function WorkspaceSettingsPage({
   const admin = createAdminClient()
   const { data: workspace } = await admin
     .from('workspaces')
-    .select('id, name, namespace_slug, is_personal, owner_id')
+    .select('id, name, namespace_slug, is_personal, owner_id, data_region')
     .eq('id', id)
     .is('deleted_at', null)
     .single()

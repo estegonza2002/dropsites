@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyPassword, createVerificationToken } from '@/lib/serving/password'
 import { passwordBruteForceLimit } from '@/lib/rate-limit'
+import { dispatch } from '@/lib/notifications/dispatcher'
 
 type RouteContext = { params: Promise<{ slug: string }> }
 
@@ -58,7 +59,7 @@ export async function POST(
   const admin = createAdminClient()
   const { data: deployment } = await admin
     .from('deployments')
-    .select('id, password_hash')
+    .select('id, password_hash, owner_id')
     .eq('slug', slug)
     .is('archived_at', null)
     .single()
@@ -80,6 +81,16 @@ export async function POST(
       target_type: 'deployment',
       details: { slug, ip },
     })
+
+    // Dispatch brute-force alert to deployment owner when the limit is exhausted
+    if (rateLimit.remaining === 0 && deployment.owner_id) {
+      void dispatch(deployment.owner_id, 'bruteForceAlert', {
+        slug,
+        deploymentId: deployment.id,
+        ip,
+        attempts: 5,
+      }).catch(() => {})
+    }
 
     return NextResponse.json(
       {

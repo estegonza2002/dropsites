@@ -1,0 +1,12 @@
+apiVersion: v2
+name: dropsites
+description: A Helm chart for DropSites — self-hosted static site publishing platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: DropSites Team
+keywords:
+  - dropsites
+  - static-sites
+  - publishing

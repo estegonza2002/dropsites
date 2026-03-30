@@ -1,9 +1,11 @@
 /**
  * OIDC SSO utilities — discovery, authorization URL builder, token exchange.
  *
- * NOTE: These are stubs. The actual OIDC flow will be wired when Supabase Auth
- * supports custom OIDC providers. The configuration UI is functional and stores
- * the config in workspaces.sso_config JSONB.
+ * The full OIDC flow is implemented:
+ *   - initiate: GET /api/auth/sso/initiate?workspaceId=<id>
+ *   - callback: GET /api/auth/sso/callback?code=<code>&state=<state>
+ *
+ * Configuration is stored in workspaces.sso_config JSONB.
  */
 
 export interface SSOConfig {
@@ -79,9 +81,6 @@ export function buildAuthorizationUrl(
 
 /**
  * Exchange an authorization code for tokens.
- *
- * STUB: Returns a placeholder structure. Will be completed when the OIDC
- * callback handler is implemented.
  */
 export async function exchangeCode(
   doc: OIDCDiscoveryDocument,

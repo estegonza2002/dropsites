@@ -1,0 +1,33 @@
+{
+  "name": "@dropsites/cli",
+  "version": "0.1.0",
+  "description": "CLI for DropSites — deploy static sites from the terminal",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "dropsites": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "dropsites",
+    "cli",
+    "deploy",
+    "static-hosting"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@dropsites/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

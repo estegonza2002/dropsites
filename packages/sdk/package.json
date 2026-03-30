@@ -1,0 +1,40 @@
+{
+  "name": "@dropsites/sdk",
+  "version": "1.0.0",
+  "description": "JavaScript SDK for the DropSites API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build && pnpm typecheck"
+  },
+  "keywords": [
+    "dropsites",
+    "static-hosting",
+    "deploy",
+    "sdk"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dropsites/dropsites"
+  },
+  "homepage": "https://dropsites.app",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

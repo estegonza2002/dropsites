@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveDeployment, resolveFile } from '@/lib/serving/resolve'
+import { resolveNamespacedUrl, isNamespacePrefix, extractNamespace } from '@/lib/namespaces/resolve'
 import { getServingHeaders, getDashboardSecurityHeaders } from '@/lib/serving/headers'
 import { verifyToken } from '@/lib/serving/password'
 import { resolveSlugRedirect } from '@/lib/serving/redirect'
@@ -13,6 +14,9 @@ import {
   type DropsitesRedirectRule,
 } from '@/lib/serving/auto-nav'
 import { recordView } from '@/lib/analytics/record'
+import { recordBandwidth } from '@/lib/limits/bandwidth'
+import { resolveCustomDomain } from '@/lib/domains/verify'
+import { validateAccessToken, recordTokenView } from '@/lib/tokens/access-tokens'
 
 // Paths handled by the App Router — pass straight through
 const PLATFORM_PREFIXES = new Set([
@@ -111,7 +115,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
 
   // Root path — pass through
-  if (pathname === '/') return NextResponse.next()
+  if (pathname === '/') {
+    // Check if this is a custom domain request at root
+    const hostname = request.headers.get('host') ?? ''
+    const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'localhost'
+    if (hostname && !hostname.includes(appDomain) && !hostname.includes('localhost')) {
+      const customDomain = await resolveCustomDomain(hostname.split(':')[0])
+      if (customDomain) {
+        // Resolve as deployment root via custom domain
+        return handleCustomDomainRequest(request, customDomain.deploymentId, '/')
+      }
+    }
+    return NextResponse.next()
+  }
 
   // ── Path traversal prevention ─────────────────────────────────────
   if (!isPathSafe(pathname)) {
@@ -179,17 +195,36 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next()
   }
 
-  const slug = firstSegment
-  // Remaining segments form the file path within the deployment
-  const requestedPath = segments.slice(1).join('/')
+  // ── Namespace resolution (S53) ──────────────────────────────────
+  // URLs of the form /~namespace/slug/... resolve within the namespace scope
+  let slug: string
+  let requestedPath: string
+  let deployment: Awaited<ReturnType<typeof resolveDeployment>> = null
 
-  // ── Path traversal in sub-path ────────────────────────────────────
-  if (requestedPath && !isPathSafe(requestedPath)) {
-    return new NextResponse('Bad Request', { status: 400 })
+  if (isNamespacePrefix(firstSegment)) {
+    const namespace = extractNamespace(firstSegment)
+    const namespacedSlug = segments[1]
+    if (!namespacedSlug) {
+      return new NextResponse('Not Found', { status: 404 })
+    }
+    slug = namespacedSlug
+    requestedPath = segments.slice(2).join('/')
+
+    if (requestedPath && !isPathSafe(requestedPath)) {
+      return new NextResponse('Bad Request', { status: 400 })
+    }
+
+    deployment = await resolveNamespacedUrl(namespace, namespacedSlug)
+  } else {
+    slug = firstSegment
+    requestedPath = segments.slice(1).join('/')
+
+    if (requestedPath && !isPathSafe(requestedPath)) {
+      return new NextResponse('Bad Request', { status: 400 })
+    }
+
+    deployment = await resolveDeployment(slug)
   }
-
-  // ── Resolve deployment ────────────────────────────────────────────
-  const deployment = await resolveDeployment(slug)
 
   if (!deployment) {
     // Check for slug redirect before returning 404
@@ -234,7 +269,22 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     })
   }
 
-  if (deployment.password_hash) {
+  // ── Access token validation (S50) ─────────────────────────────────
+  const accessTokenParam = request.nextUrl.searchParams.get('t')
+  let validatedTokenId: string | null = null
+
+  if (accessTokenParam) {
+    const tokenRecord = await validateAccessToken(accessTokenParam, slug)
+    if (!tokenRecord) {
+      return new NextResponse('Forbidden: invalid or expired access token', { status: 403 })
+    }
+    validatedTokenId = tokenRecord.id
+    // Record token view (fire-and-forget)
+    recordTokenView(tokenRecord.id).catch(() => {})
+  }
+
+  if (deployment.password_hash && !validatedTokenId) {
+    // Access tokens bypass password protection
     const sessionCookie = request.cookies.get(`ds-auth-${deployment.id}`)
     const tokenValue = sessionCookie?.value
     const isValid =
@@ -353,10 +403,79 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // Record view (fire-and-forget — never delays serving)
-  recordView(deployment.id, request)
+  // Record view + bandwidth (fire-and-forget — never delays serving)
+  recordView(deployment.id, request, validatedTokenId)
+  if (file.size_bytes > 0) {
+    void recordBandwidth(deployment.id, file.size_bytes).catch(() => {})
+  }
 
   return serveFile(request, deployment, file, 200, autoNavScript)
+}
+
+/**
+ * Handle a request arriving via a custom domain.
+ * Resolves the deployment by ID (already looked up from the custom_domains table)
+ * and serves the requested path.
+ */
+async function handleCustomDomainRequest(
+  request: NextRequest,
+  deploymentId: string,
+  pathname: string,
+): Promise<NextResponse> {
+  const admin = (await import('@/lib/supabase/admin')).createAdminClient()
+  const { data: deployment } = await admin
+    .from('deployments')
+    .select('*')
+    .eq('id', deploymentId)
+    .is('archived_at', null)
+    .single()
+
+  if (!deployment) {
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
+  if (deployment.is_disabled || deployment.is_admin_disabled) {
+    return new NextResponse('Site unavailable', { status: 503 })
+  }
+
+  if (!deployment.current_version_id) {
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
+  const requestedPath = pathname === '/' ? '' : pathname.replace(/^\//, '')
+  let effectivePath = requestedPath || deployment.entry_path
+
+  if (effectivePath.endsWith('/')) {
+    effectivePath += 'index.html'
+  }
+
+  let file = await resolveFile(
+    deployment.id,
+    deployment.current_version_id,
+    effectivePath,
+  )
+
+  if (!file && !requestedPath.includes('.')) {
+    const indexPath = requestedPath
+      ? `${requestedPath}/index.html`
+      : 'index.html'
+    file = await resolveFile(
+      deployment.id,
+      deployment.current_version_id,
+      indexPath,
+    )
+    if (file) effectivePath = indexPath
+  }
+
+  if (!file) {
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
+  recordView(deployment.id, request)
+  if (file.size_bytes > 0) {
+    void recordBandwidth(deployment.id, file.size_bytes).catch(() => {})
+  }
+  return serveFile(request, deployment, file, 200)
 }
 
 function serveFile(

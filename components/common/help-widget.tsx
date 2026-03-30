@@ -32,7 +32,7 @@ export function HelpWidget() {
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {open && (
-        <div className="mb-2 w-56 rounded-lg border bg-popover p-2 shadow-lg">
+        <div className="mb-2 w-56 rounded-lg border bg-popover p-2 shadow-sm">
           <p className="px-2 pb-1.5 text-xs font-medium text-muted-foreground">Help</p>
           {links.map((link) => (
             <a
@@ -60,7 +60,7 @@ export function HelpWidget() {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 rounded-full shadow-md"
+                className="h-10 w-10 rounded-full shadow-sm"
                 onClick={() => setOpen((prev) => !prev)}
                 aria-label="Help"
               />

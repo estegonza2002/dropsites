@@ -36,6 +36,9 @@ const SKIP_PATTERNS = [
   "components/marketing/", // marketing page predates token system — will be migrated
   "app/(marketing)/page.tsx", // marketing landing page — will be migrated to token system
   "app/(marketing)/status/", // status page uses inline styles for standalone rendering
+  "app/(marketing)/sla/", // SLA page uses inline styles for standalone rendering
+  "app/(marketing)/blog/", // blog posts use inline hex for code syntax highlighting
+  "opengraph-image.tsx", // Next.js ImageResponse (edge runtime) requires raw values — CSS vars not supported
   "lib/notifications/templates", // email templates require inline hex — email clients can't use CSS variables
 ];
 

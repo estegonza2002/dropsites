@@ -45,7 +45,12 @@ export default function Home() {
       <section className="ds-hero">
         <div className="ds-hero-badge fade-up">
           <div className="ds-hero-badge-dot" />
-          Now in early access — free to start
+          Now generally available — free to start
+        </div>
+        <div className="ds-hero-badge fade-up" style={{ marginTop: '0.5rem' }}>
+          <span>⚡</span>
+          Works with Claude —{' '}
+          <a href="/mcp" style={{ textDecoration: 'underline' }}>deploy via AI</a>
         </div>
         <h1 className="ds-hero-h1 fade-up-2">
           HTML is better than PowerPoint.<br />
@@ -96,6 +101,11 @@ export default function Home() {
         <div className="ds-proof-item">
           <span className="ds-proof-num">Self-hostable</span>
           <span className="ds-proof-label">Enterprise ready</span>
+        </div>
+        <div className="ds-proof-div" />
+        <div className="ds-proof-item">
+          <span className="ds-proof-num">10,000+</span>
+          <span className="ds-proof-label">Sites deployed</span>
         </div>
       </div>
 
@@ -495,6 +505,7 @@ export default function Home() {
             <li><a href="/docs/cli">CLI</a></li>
             <li><a href="/docs/github-actions">GitHub Actions</a></li>
             <li><a href="/docs/sdks">SDKs</a></li>
+            <li><a href="/mcp">MCP Connector</a></li>
           </ul>
         </div>
         <div className="ds-footer-col">

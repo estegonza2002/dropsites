@@ -20,9 +20,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to list sessions' }, { status: 500 })
   }
 
-  // Get the current session ID to mark it
-  const { data: { session: currentSession } } = await supabase.auth.getSession()
-
   return NextResponse.json({
     sessions: (sessions ?? []).map((s: {
       id: string
@@ -38,9 +35,10 @@ export async function GET() {
       createdAt: s.created_at,
       lastActiveAt: s.updated_at,
       expiresAt: s.not_after,
-      isCurrent: s.id === currentSession?.user?.id, // sessions share user context
+      // Session IDs from the RPC cannot be compared to the JWT's sub claim;
+      // isCurrent is intentionally omitted until Supabase exposes session IDs in tokens.
+      isCurrent: false,
     })),
-    currentSessionId: currentSession?.user?.id ?? null,
   })
 }
 

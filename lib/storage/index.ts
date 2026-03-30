@@ -1,5 +1,6 @@
 import { Readable } from 'stream'
 import * as s3 from './s3-client'
+import { localBackend } from './local-backend'
 
 export type StorageBackend = {
   upload(
@@ -18,7 +19,7 @@ export type StorageBackend = {
   list(bucket: string, prefix: string): Promise<string[]>
 }
 
-const r2Backend: StorageBackend = {
+const s3Backend: StorageBackend = {
   upload: s3.uploadObject,
   get: s3.getObject,
   delete: s3.deleteObject,
@@ -27,15 +28,28 @@ const r2Backend: StorageBackend = {
   list: s3.listObjects,
 }
 
-function resolveBackend(): StorageBackend {
-  const backend = process.env.STORAGE_BACKEND ?? 'r2'
+/** Supported STORAGE_BACKEND values */
+export type StorageBackendType = 'r2' | 's3' | 'gcs' | 'azure' | 'minio' | 'local'
 
-  if (backend === 'r2' || backend === 's3') {
-    return r2Backend
+function resolveBackend(): StorageBackend {
+  const backend = (process.env.STORAGE_BACKEND ?? 'r2') as string
+
+  // r2, s3, gcs (S3-compatible), azure (via S3 gateway), minio (S3-compatible)
+  if (backend === 'r2' || backend === 's3' || backend === 'gcs' || backend === 'azure') {
+    return s3Backend
+  }
+
+  if (backend === 'minio') {
+    // MinIO is S3-compatible — same backend, env vars provide endpoint
+    return s3Backend
+  }
+
+  if (backend === 'local') {
+    return localBackend
   }
 
   throw new Error(
-    `Unsupported STORAGE_BACKEND: "${backend}". Supported values: r2, s3`
+    `Unsupported STORAGE_BACKEND: "${backend}". Supported values: r2, s3, gcs, azure, minio, local`
   )
 }
 

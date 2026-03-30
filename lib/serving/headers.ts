@@ -1,4 +1,6 @@
 import type { Deployment, DeploymentFile } from './resolve'
+import type { CorsConfig } from './cors'
+import { buildCorsHeaders, buildPreflightResponse } from './cors'
 
 const HTML_EXTS = new Set(['.html', '.htm'])
 
@@ -70,6 +72,35 @@ export function getServingHeaders(
   headers['ETag'] = `"${file.sha256_hash}"`
 
   return headers
+}
+
+/**
+ * Apply CORS headers to a serving response.
+ * Merges CORS headers into the provided headers object in-place.
+ */
+export function applyServingCorsHeaders(
+  headers: Record<string, string>,
+  corsConfig: CorsConfig,
+  origin: string,
+): void {
+  const corsHeaders = buildCorsHeaders(corsConfig, origin)
+  for (const [key, value] of Object.entries(corsHeaders)) {
+    headers[key] = value
+  }
+}
+
+/**
+ * Build a complete set of preflight (OPTIONS) response headers
+ * for a deployment with CORS enabled.
+ *
+ * Returns null if the deployment has no CORS configuration,
+ * signalling the caller should not intercept the OPTIONS request.
+ */
+export function getPreflightHeaders(
+  corsConfig: CorsConfig,
+  origin: string,
+): Record<string, string> | null {
+  return buildPreflightResponse(corsConfig, origin)
 }
 
 /**

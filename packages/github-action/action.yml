@@ -1,0 +1,45 @@
+name: 'DropSites Deploy'
+description: 'Deploy static sites to DropSites from your GitHub Actions workflow'
+author: 'DropSites'
+
+branding:
+  icon: 'upload-cloud'
+  color: 'orange'
+
+inputs:
+  api-key:
+    description: 'DropSites API key'
+    required: true
+  workspace-id:
+    description: 'Workspace ID to deploy into'
+    required: true
+  path:
+    description: 'Path to the file or directory to deploy'
+    required: true
+  slug:
+    description: 'Custom slug for the deployment. Auto-generated if omitted.'
+    required: false
+  entry-path:
+    description: 'Entry point file path within the archive (defaults to index.html)'
+    required: false
+  password:
+    description: 'Password to protect the deployment'
+    required: false
+  expires-at:
+    description: 'Expiry date in ISO 8601 format'
+    required: false
+  base-url:
+    description: 'DropSites API base URL (defaults to https://dropsites.app/api/v1)'
+    required: false
+
+outputs:
+  slug:
+    description: 'The slug of the deployed site'
+  url:
+    description: 'The public URL of the deployed site'
+  deployment-id:
+    description: 'The deployment ID'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

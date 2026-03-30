@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@dropsites/sdk": ["./packages/sdk/src/index.ts"],
+      "@dropsites/mcp": ["./packages/mcp/src/index.ts"]
     }
   },
   "include": [
@@ -28,7 +30,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "packages/sdk/src/**/*.ts",
+    "packages/mcp/src/**/*.ts"
   ],
-  "exclude": ["node_modules", "supabase/functions"]
+  "exclude": ["node_modules", "supabase/functions", "packages/sdk/node_modules", "packages/sdk/dist", "packages/mcp/node_modules", "packages/mcp/dist", "packages/cli"]
 }

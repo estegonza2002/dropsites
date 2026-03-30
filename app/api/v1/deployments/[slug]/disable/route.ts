@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserRole } from '@/lib/auth/permissions'
+import { dispatchWebhooksForWorkspace } from '@/lib/webhooks/dispatch'
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 type RouteContext = { params: Promise<{ slug: string }> }
 
@@ -53,6 +56,16 @@ export async function POST(_req: NextRequest, ctx: RouteContext): Promise<NextRe
     details: { slug },
   })
 
+  // Fire webhook (non-blocking)
+  dispatchWebhooksForWorkspace(deployment.workspace_id, {
+    event: 'deployment.disabled',
+    slug,
+    url: `${APP_URL}/${slug}`,
+    timestamp: new Date().toISOString(),
+    actor: user.id,
+    deployment: { id: deployment.id, name: slug, version: null },
+  }).catch(() => {})
+
   return NextResponse.json({ ok: true, is_disabled: true })
 }
 
@@ -88,6 +101,16 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext): Promise<Next
     target_type: 'deployment',
     details: { slug },
   })
+
+  // Fire webhook (non-blocking)
+  dispatchWebhooksForWorkspace(deployment.workspace_id, {
+    event: 'deployment.reactivated',
+    slug,
+    url: `${APP_URL}/${slug}`,
+    timestamp: new Date().toISOString(),
+    actor: user.id,
+    deployment: { id: deployment.id, name: slug, version: null },
+  }).catch(() => {})
 
   return NextResponse.json({ ok: true, is_disabled: false })
 }

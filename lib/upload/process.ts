@@ -7,9 +7,11 @@ import { isOptimizableImage, optimizeImage } from './image-optimize'
 import { generateSlug } from '@/lib/slug/generate'
 import { validateSlug, checkSlugAvailability } from '@/lib/slug/validate'
 import { storage } from '@/lib/storage'
+import { createMultiRegionBackend } from '@/lib/storage/multi-region'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkDeploymentLimits } from '@/lib/limits/check'
 import { purgeDeploymentCache } from '@/lib/serving/cdn'
+import { dispatchWebhooksForWorkspace } from '@/lib/webhooks/dispatch'
 
 export type DeploymentResult = {
   deploymentId: string
@@ -25,6 +27,8 @@ type UploadInput = {
   slug?: string
   workspaceId: string
   userId: string
+  /** When set, routes storage to the workspace's regional bucket. */
+  dataRegion?: string
 }
 
 type FileToStore = {
@@ -50,6 +54,10 @@ export class UploadError extends Error {
 
 export async function processUpload(input: UploadInput): Promise<DeploymentResult> {
   const { file, filename, workspaceId, userId } = input
+  // Use regional bucket when workspace has a data_region configured
+  const activeStorage = input.dataRegion
+    ? createMultiRegionBackend(workspaceId)
+    : storage
 
   // --- Step 1: Determine files to process ---
   let filesToStore: FileToStore[]
@@ -210,7 +218,7 @@ export async function processUpload(input: UploadInput): Promise<DeploymentResul
   // --- Step 6: Upload files to storage ---
   await Promise.all(
     filesToStore.map((f) =>
-      storage.upload(BUCKET, `${storagePath}/${f.path}`, f.content, f.mimeType),
+      activeStorage.upload(BUCKET, `${storagePath}/${f.path}`, f.content, f.mimeType),
     ),
   )
 
@@ -242,6 +250,22 @@ export async function processUpload(input: UploadInput): Promise<DeploymentResul
   // --- Step 9: Purge CDN cache (fire-and-forget) ---
   purgeDeploymentCache(resolvedSlug).catch(() => {
     // Non-fatal — CDN will expire naturally
+  })
+
+  // --- Step 10: Fire webhook (non-blocking) ---
+  dispatchWebhooksForWorkspace(workspaceId, {
+    event: 'deployment.created',
+    slug: resolvedSlug,
+    url: `${APP_URL}/${resolvedSlug}`,
+    timestamp: new Date().toISOString(),
+    actor: userId,
+    deployment: {
+      id: deploymentId,
+      name: resolvedSlug,
+      version: 1,
+    },
+  }).catch(() => {
+    // Non-fatal — webhook delivery handled by retry logic
   })
 
   return {

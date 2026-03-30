@@ -1,104 +1,121 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserRole } from '@/lib/auth/permissions'
 import { validateSlug, checkSlugAvailability } from '@/lib/slug/validate'
 import { processUpload, UploadError } from '@/lib/upload/process'
+import { dispatchWebhooksForWorkspace } from '@/lib/webhooks/dispatch'
+import { withApiAuth } from '@/lib/api/middleware'
+import { apiSuccess, apiError } from '@/lib/api/response'
+import type { ApiAuth } from '@/lib/api/auth'
 
-type RouteContext = { params: Promise<{ slug: string }> }
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 async function resolveDeployment(slug: string, userId: string) {
   const admin = createAdminClient()
   const { data: deployment, error } = await admin
     .from('deployments')
-    .select('id, slug, namespace, workspace_id, owner_id, entry_path, file_count, storage_bytes, password_hash, is_disabled, is_admin_disabled, health_status, expires_at, total_views, created_at, updated_at')
+    .select(
+      'id, slug, namespace, workspace_id, owner_id, entry_path, file_count, storage_bytes, password_hash, is_disabled, is_admin_disabled, health_status, allow_indexing, auto_nav_enabled, expires_at, total_views, created_at, updated_at, archived_at',
+    )
     .eq('slug', slug)
-    .is('archived_at', null)
     .single()
 
   if (error || !deployment) return null
+
+  // For archived deployments, return 410
+  if (deployment.archived_at) return { deployment, role: null as string | null, gone: true }
+
   const role = await getUserRole(userId, deployment.workspace_id)
   if (!role) return null
-  return { deployment, role }
+  return { deployment, role, gone: false }
 }
 
 // GET /api/v1/deployments/[slug] — deployment detail
-export async function GET(_req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+export const GET = withApiAuth(async (_req: NextRequest, ctx, auth: ApiAuth) => {
   const { slug } = await ctx.params
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const resolved = await resolveDeployment(slug, auth.userId)
 
-  const resolved = await resolveDeployment(slug, user.id)
-  if (!resolved) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!resolved) return apiError('Not found', 'not_found', 404)
+  if (resolved.gone) return apiError('Deployment has been deleted', 'gone', 410)
 
-  return NextResponse.json(resolved.deployment)
-}
+  const { archived_at: _archived, password_hash: _pw, ...safe } = resolved.deployment
+  return apiSuccess(safe)
+})
 
 // PUT /api/v1/deployments/[slug] — overwrite deployment content
-export async function PUT(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+export const PUT = withApiAuth(async (req: NextRequest, ctx, auth: ApiAuth) => {
   const { slug } = await ctx.params
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const resolved = await resolveDeployment(slug, auth.userId)
 
-  const resolved = await resolveDeployment(slug, user.id)
-  if (!resolved) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (!['owner', 'publisher'].includes(resolved.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!resolved) return apiError('Not found', 'not_found', 404)
+  if (resolved.gone) return apiError('Deployment has been deleted', 'gone', 410)
+  if (!resolved.role || !['owner', 'publisher'].includes(resolved.role)) {
+    return apiError('Forbidden', 'forbidden', 403)
   }
 
   let formData: FormData
   try {
     formData = await req.formData()
   } catch {
-    return NextResponse.json({ error: 'Invalid multipart form data' }, { status: 400 })
+    return apiError('Invalid multipart form data', 'invalid_body', 400)
   }
 
   const fileEntry = formData.get('file')
   if (!fileEntry || !(fileEntry instanceof File)) {
-    return NextResponse.json({ error: 'Missing required field: file' }, { status: 400 })
+    return apiError('Missing required field: file', 'missing_field', 400)
   }
 
   const buffer = Buffer.from(await fileEntry.arrayBuffer())
 
   try {
-    // Re-use processUpload with the existing slug to overwrite
     const result = await processUpload({
       file: buffer,
       filename: fileEntry.name,
       slug,
       workspaceId: resolved.deployment.workspace_id,
-      userId: user.id,
+      userId: auth.userId,
     })
-    return NextResponse.json(result)
+
+    // Fire webhook (non-blocking)
+    dispatchWebhooksForWorkspace(resolved.deployment.workspace_id, {
+      event: 'deployment.updated',
+      slug,
+      url: `${APP_URL}/${slug}`,
+      timestamp: new Date().toISOString(),
+      actor: auth.userId,
+      deployment: {
+        id: resolved.deployment.id,
+        name: slug,
+        version: null,
+      },
+    }).catch(() => {})
+
+    return apiSuccess(result)
   } catch (err) {
     if (err instanceof UploadError) {
-      return NextResponse.json({ error: err.message }, { status: err.status })
+      return apiError(err.message, 'upload_error', err.status)
     }
     console.error('Overwrite error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return apiError('Internal server error', 'internal_error', 500)
   }
-}
+})
 
-// PATCH /api/v1/deployments/[slug] — rename slug or update settings
-export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+// PATCH /api/v1/deployments/[slug] — update deployment metadata
+export const PATCH = withApiAuth(async (req: NextRequest, ctx, auth: ApiAuth) => {
   const { slug } = await ctx.params
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const resolved = await resolveDeployment(slug, auth.userId)
 
-  const resolved = await resolveDeployment(slug, user.id)
-  if (!resolved) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (!['owner', 'publisher'].includes(resolved.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!resolved) return apiError('Not found', 'not_found', 404)
+  if (resolved.gone) return apiError('Deployment has been deleted', 'gone', 410)
+  if (!resolved.role || !['owner', 'publisher'].includes(resolved.role)) {
+    return apiError('Forbidden', 'forbidden', 403)
   }
 
   let body: Record<string, unknown>
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    return apiError('Invalid JSON body', 'invalid_body', 400)
   }
 
   const admin = createAdminClient()
@@ -110,52 +127,52 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     const candidateSlug = body.slug.trim()
     const validation = validateSlug(candidateSlug)
     if (!validation.valid) {
-      return NextResponse.json({ error: `Invalid slug: ${validation.errors[0]}` }, { status: 400 })
+      return apiError(`Invalid slug: ${validation.errors[0]}`, 'invalid_slug', 400)
     }
     const available = await checkSlugAvailability(candidateSlug)
     if (!available) {
-      return NextResponse.json({ error: 'Slug is already taken' }, { status: 409 })
+      return apiError('Slug is already taken', 'slug_conflict', 409)
     }
     updates.slug = candidateSlug
     newSlug = candidateSlug
   }
 
-  // Boolean setting toggles (allow_indexing, auto_nav_enabled)
+  // Boolean toggles
   if (typeof body.allow_indexing === 'boolean') updates.allow_indexing = body.allow_indexing
   if (typeof body.auto_nav_enabled === 'boolean') updates.auto_nav_enabled = body.auto_nav_enabled
 
-  // Link expiry (ISO string or null to clear)
+  // Link expiry
   if ('expires_at' in body) {
     if (body.expires_at === null) {
       updates.expires_at = null
     } else if (typeof body.expires_at === 'string') {
       const expiryDate = new Date(body.expires_at as string)
       if (isNaN(expiryDate.getTime())) {
-        return NextResponse.json({ error: 'Invalid expires_at date' }, { status: 400 })
+        return apiError('Invalid expires_at date', 'invalid_field', 400)
       }
       if (expiryDate <= new Date()) {
-        return NextResponse.json({ error: 'expires_at must be a future date' }, { status: 400 })
+        return apiError('expires_at must be a future date', 'invalid_field', 400)
       }
       updates.expires_at = expiryDate.toISOString()
     } else {
-      return NextResponse.json({ error: 'expires_at must be an ISO date string or null' }, { status: 400 })
+      return apiError('expires_at must be an ISO date string or null', 'invalid_field', 400)
     }
   }
 
   if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    return apiError('No valid fields to update', 'no_changes', 400)
   }
 
   const { data: updated, error: updateError } = await admin
     .from('deployments')
     .update(updates)
     .eq('id', resolved.deployment.id)
-    .select('id, slug')
+    .select('id, slug, allow_indexing, auto_nav_enabled, expires_at, updated_at')
     .single()
 
   if (updateError || !updated) {
     console.error('PATCH deployment error:', updateError)
-    return NextResponse.json({ error: 'Failed to update deployment' }, { status: 500 })
+    return apiError('Failed to update deployment', 'update_failed', 500)
   }
 
   // Create slug redirect when slug changes (90-day expiry)
@@ -176,22 +193,33 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     )
   }
 
-  return NextResponse.json(updated)
-}
+  // Fire webhook (non-blocking)
+  dispatchWebhooksForWorkspace(resolved.deployment.workspace_id, {
+    event: 'deployment.updated',
+    slug: newSlug ?? slug,
+    url: `${APP_URL}/${newSlug ?? slug}`,
+    timestamp: new Date().toISOString(),
+    actor: auth.userId,
+    deployment: {
+      id: resolved.deployment.id,
+      name: newSlug ?? slug,
+      version: null,
+    },
+  }).catch(() => {})
 
-// DELETE /api/v1/deployments/[slug] — delete deployment (soft archive)
-export async function DELETE(_req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+  return apiSuccess(updated)
+})
+
+// DELETE /api/v1/deployments/[slug] — soft-delete (archive)
+export const DELETE = withApiAuth(async (_req: NextRequest, ctx, auth: ApiAuth) => {
   const { slug } = await ctx.params
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const resolved = await resolveDeployment(slug, auth.userId)
 
-  const resolved = await resolveDeployment(slug, user.id)
-  if (!resolved) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!resolved) return apiError('Not found', 'not_found', 404)
+  if (resolved.gone) return apiError('Deployment has been deleted', 'gone', 410)
 
-  // Only owner can delete
   if (resolved.role !== 'owner') {
-    return NextResponse.json({ error: 'Forbidden: only workspace owners can delete deployments' }, { status: 403 })
+    return apiError('Only workspace owners can delete deployments', 'forbidden', 403)
   }
 
   try {
@@ -203,18 +231,31 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext): Promise<Next
 
     if (error) throw error
 
-    // Audit log
     await admin.from('audit_log').insert({
       action: 'deployment.delete',
-      actor_id: user.id,
+      actor_id: auth.userId,
       target_id: resolved.deployment.id,
       target_type: 'deployment',
       details: { slug },
     })
+
+    // Fire webhook (non-blocking)
+    dispatchWebhooksForWorkspace(resolved.deployment.workspace_id, {
+      event: 'deployment.deleted',
+      slug,
+      url: `${APP_URL}/${slug}`,
+      timestamp: new Date().toISOString(),
+      actor: auth.userId,
+      deployment: {
+        id: resolved.deployment.id,
+        name: slug,
+        version: null,
+      },
+    }).catch(() => {})
   } catch (err) {
     console.error('Delete deployment error:', err)
-    return NextResponse.json({ error: 'Failed to delete deployment' }, { status: 500 })
+    return apiError('Failed to delete deployment', 'delete_failed', 500)
   }
 
-  return new NextResponse(null, { status: 204 })
-}
+  return new Response(null, { status: 204 }) as unknown as import('next/server').NextResponse
+})

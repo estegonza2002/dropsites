@@ -10,6 +10,7 @@ import { TrialBanner } from '@/components/onboarding/trial-banner'
 import { CookieConsentBanner } from '@/components/auth/cookie-consent-banner'
 import { getTrialInfo } from '@/lib/auth/provision'
 import type { WorkspaceRow } from '@/lib/auth/types'
+import { BetaFeedbackButton } from '@/components/beta/feedback-button'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -68,6 +69,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </main>
       </div>
       <CookieConsentBanner />
+      <BetaFeedbackButton />
     </div>
   )
 }

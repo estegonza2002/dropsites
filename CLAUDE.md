@@ -96,7 +96,7 @@ Key tables (full schema created during M1.1):
 
 ## Current Milestone
 
-**M1.5** — Dashboard in progress. S15 complete. Next: S16 (deployment table, search, detail page).
+**Phase 3 complete. All sessions S74–S78 done.** DropSites v1.0 GA — MCP server published, beta infrastructure live, smoke tests passing.
 
 _Update this line at the start of each new milestone session._
 

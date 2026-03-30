@@ -22,6 +22,9 @@ last_updated: 2026-03-27
 | **Task Cards** | [`implementation/TASK_CARDS.md`](implementation/TASK_CARDS.md) | engineering | 44 self-contained agent session prompts for Phase 1 (S01–S44). | 1.0 |
 | **Feature Contract Schema** | [`feature-contracts/SCHEMA.md`](feature-contracts/SCHEMA.md) | engineering | YAML spec format for feature contracts. Five Lenses testing framework. | 1.0 |
 | **Coverage Validator** | [`feature-contracts/COVERAGE-VALIDATOR.md`](feature-contracts/COVERAGE-VALIDATOR.md) | engineering | Automated validator spec for feature contract completeness. | 1.0 |
+| **MCP Connector Guide** | [`mcp-connector.md`](mcp-connector.md) | engineering | Setup guide for Claude Desktop and claude.ai MCP connector. | 1.0 |
+| **v1.0 Changelog** | [`changelog/v1.0.md`](changelog/v1.0.md) | engineering | Full feature changelog for the v1.0 GA release. | 1.0 |
+| **Security Pentest Prep** | [`security/pentest-prep.md`](security/pentest-prep.md) | engineering | Security posture and pentest preparation notes. | 1.0 |
 
 ## Reference Artifacts
 

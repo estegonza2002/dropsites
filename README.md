@@ -1,3 +1,31 @@
+# DropSites
+
+![Build](https://img.shields.io/github/actions/workflow/status/dropsites/dropsites/ci.yml)
+![npm](https://img.shields.io/npm/v/@dropsites/mcp)
+![License](https://img.shields.io/npm/l/@dropsites/mcp)
+
+Self-hosted static site publishing platform. Drop a file or folder in, get a shareable URL out.
+
+## MCP Connector — Deploy from Claude
+
+Use DropSites directly from Claude Desktop or claude.ai:
+
+```json
+{
+  "mcpServers": {
+    "dropsites": {
+      "command": "npx",
+      "args": ["-y", "@dropsites/mcp"],
+      "env": { "DROPSITES_API_KEY": "YOUR_KEY" }
+    }
+  }
+}
+```
+
+📖 [Setup guide](docs/mcp-connector.md) · 🔑 [Get API key](https://dropsites.app/dashboard/settings/api-keys) · 📦 [npm](https://www.npmjs.com/package/@dropsites/mcp)
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

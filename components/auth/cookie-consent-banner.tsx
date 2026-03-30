@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import Link from 'next/link'
 import { Cookie, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,21 +30,33 @@ export function CookieConsentBanner() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    const consent = getStoredConsent()
-    if (!consent) {
-      setVisible(true)
-    }
+    startTransition(() => {
+      const consent = getStoredConsent()
+      if (!consent) {
+        setVisible(true)
+      }
+    })
   }, [])
 
   if (!visible) return null
 
+  function recordConsent(decision: 'accepted' | 'declined') {
+    fetch('/api/v1/consent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decision }),
+    }).catch(() => {})
+  }
+
   function handleAccept() {
     setStoredConsent('accepted')
+    recordConsent('accepted')
     setVisible(false)
   }
 
   function handleDecline() {
     setStoredConsent('declined')
+    recordConsent('declined')
     setVisible(false)
   }
 
@@ -52,7 +64,7 @@ export function CookieConsentBanner() {
     <div
       role="banner"
       aria-label="Cookie consent"
-      className="fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background px-4 py-3 shadow-lg sm:px-6"
+      className="fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background px-4 py-3 shadow-sm sm:px-6"
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3 text-sm text-muted-foreground">

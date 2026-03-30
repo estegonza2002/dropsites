@@ -6,9 +6,11 @@ import { createClient } from '@/lib/supabase/server'
 import { StatusBadge } from '@/components/deployments/deployment-badges'
 import { HealthStatusBadge } from '@/components/deployments/health-status-badge'
 import { CopyUrlButton } from '@/components/deployments/copy-url-button'
+import { VersionHistoryPanel } from '@/components/deployments/version-history-panel'
 import { formatBytes, formatDate } from '@/lib/utils/format'
 import { ArrowLeft, FileText, Globe, Code } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
+import { getVersionHistory } from '@/lib/versions/history'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -44,7 +46,7 @@ export default async function DeploymentDetailPage({ params }: PageProps) {
   const { data: deployment } = await admin
     .from('deployments')
     .select(
-      'id, slug, namespace, workspace_id, entry_path, file_count, storage_bytes, password_hash, is_disabled, is_admin_disabled, health_status, health_details, health_checked_at, expires_at, total_views, created_at, updated_at'
+      'id, slug, namespace, workspace_id, entry_path, file_count, storage_bytes, password_hash, is_disabled, is_admin_disabled, health_status, health_details, health_checked_at, current_version_id, expires_at, total_views, created_at, updated_at'
     )
     .eq('slug', slug)
     .in('workspace_id', workspaceIds)
@@ -138,8 +140,47 @@ export default async function DeploymentDetailPage({ params }: PageProps) {
         )}
       </dl>
 
-      {/* Actions placeholder — populated in S17 */}
+      {/* Version History (S52) */}
+      <VersionHistorySection
+        deploymentId={deployment.id}
+        deploymentSlug={deployment.slug}
+        currentVersionId={deployment.current_version_id ?? undefined}
+      />
     </div>
+  )
+}
+
+async function VersionHistorySection({
+  deploymentId,
+  deploymentSlug,
+  currentVersionId,
+}: {
+  deploymentId: string
+  deploymentSlug: string
+  currentVersionId: string | undefined
+}) {
+  let versions: Awaited<ReturnType<typeof getVersionHistory>> = []
+  try {
+    versions = await getVersionHistory(deploymentId)
+  } catch {
+    // Non-fatal
+  }
+
+  if (versions.length === 0) return null
+
+  const annotated = versions.map((v) => ({
+    ...v,
+    is_live: v.id === currentVersionId,
+  }))
+
+  return (
+    <>
+      <Separator />
+      <VersionHistoryPanel
+        deploymentSlug={deploymentSlug}
+        initialVersions={annotated}
+      />
+    </>
   )
 }
 

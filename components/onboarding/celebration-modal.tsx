@@ -78,7 +78,7 @@ export function CelebrationModal({
                     'var(--color-accent)',
                     'var(--color-success)',
                     'var(--color-warning)',
-                    '#a78bfa', // purple for visual variety
+                    'var(--color-expiring)', // warm orange for visual variety
                   ][i % 4],
                 }}
               />

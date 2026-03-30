@@ -1,95 +1,40 @@
-import { randomBytes } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserRole } from '@/lib/auth/permissions'
+import { withApiAuth } from '@/lib/api/middleware'
+import { apiSuccess, apiError } from '@/lib/api/response'
+import type { ApiAuth } from '@/lib/api/auth'
+import { randomBytes } from 'crypto'
 
-type RouteContext = { params: Promise<{ id: string }> }
+// POST /api/v1/workspaces/[id]/members — invite a member by email
+export const POST = withApiAuth(async (req: NextRequest, ctx, auth: ApiAuth) => {
+  const { id: workspaceId } = await ctx.params
 
-// GET /api/v1/workspaces/[id]/members — list members
-export async function GET(_request: NextRequest, context: RouteContext): Promise<NextResponse> {
-  const { id } = await context.params
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const role = await getUserRole(user.id, id)
-  if (!role) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  const admin = createAdminClient()
-  const { data: members, error } = await admin
-    .from('workspace_members')
-    .select('id, workspace_id, user_id, email, role, invited_at, accepted_at, invite_expires_at')
-    .eq('workspace_id', id)
-    .order('accepted_at', { ascending: true, nullsFirst: false })
-
-  if (error) {
-    console.error('List members error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-
-  // Fetch display names for accepted members
-  const userIds = (members ?? []).filter((m) => m.user_id).map((m) => m.user_id!)
-  let userMap = new Map<string, string>()
-  if (userIds.length > 0) {
-    const { data: users } = await admin
-      .from('users')
-      .select('id, display_name, email')
-      .in('id', userIds)
-
-    userMap = new Map((users ?? []).map((u) => [u.id, u.display_name || u.email]))
-  }
-
-  const enriched = (members ?? []).map((m) => ({
-    ...m,
-    display_name: m.user_id ? userMap.get(m.user_id) ?? m.email : m.email,
-    is_pending: !m.accepted_at,
-  }))
-
-  return NextResponse.json({ members: enriched })
-}
-
-// POST /api/v1/workspaces/[id]/members — invite a member
-export async function POST(request: NextRequest, context: RouteContext): Promise<NextResponse> {
-  const { id } = await context.params
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const role = await getUserRole(user.id, id)
+  const role = await getUserRole(auth.userId, workspaceId)
+  if (!role) return apiError('Not found', 'not_found', 404)
   if (role !== 'owner') {
-    return NextResponse.json({ error: 'Only owners can invite members' }, { status: 403 })
+    return apiError('Only workspace owners can invite members', 'forbidden', 403)
   }
 
-  let body: { email?: string; role?: string }
+  let body: Record<string, unknown>
   try {
-    body = await request.json()
+    body = await req.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    return apiError('Invalid JSON body', 'invalid_body', 400)
   }
 
-  const email = body.email?.trim().toLowerCase()
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
+    return apiError('A valid email is required', 'invalid_field', 400)
   }
 
-  const inviteRole = body.role as 'publisher' | 'viewer' | undefined
-  if (inviteRole && !['publisher', 'viewer'].includes(inviteRole)) {
-    return NextResponse.json({ error: 'Role must be publisher or viewer' }, { status: 400 })
+  const memberRole = typeof body.role === 'string' ? body.role : 'viewer'
+  if (!['publisher', 'viewer'].includes(memberRole)) {
+    return apiError(
+      'role must be "publisher" or "viewer"',
+      'invalid_field',
+      400,
+    )
   }
 
   const admin = createAdminClient()
@@ -98,64 +43,74 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
   const { data: existing } = await admin
     .from('workspace_members')
     .select('id, accepted_at')
-    .eq('workspace_id', id)
+    .eq('workspace_id', workspaceId)
     .eq('email', email)
     .maybeSingle()
 
-  if (existing?.accepted_at) {
-    return NextResponse.json({ error: 'User is already a member' }, { status: 409 })
+  if (existing) {
+    return apiError('User is already a member or has a pending invite', 'member_exists', 409)
   }
 
-  // Generate invite token
+  // Look up user by email to set user_id if they exist
+  const { data: existingUser } = await admin
+    .from('users')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle()
+
   const inviteToken = randomBytes(32).toString('hex')
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+  const inviteExpiresAt = new Date()
+  inviteExpiresAt.setDate(inviteExpiresAt.getDate() + 7) // 7-day expiry
 
-  if (existing && !existing.accepted_at) {
-    // Update existing pending invitation
-    const { error } = await admin
-      .from('workspace_members')
-      .update({
-        role: inviteRole ?? 'viewer',
-        invite_token: inviteToken,
-        invite_expires_at: expiresAt,
-        invited_by: user.id,
-        invited_at: new Date().toISOString(),
-      })
-      .eq('id', existing.id)
-
-    if (error) {
-      console.error('Update invitation error:', error)
-      return NextResponse.json({ error: 'Failed to send invitation' }, { status: 500 })
-    }
-  } else {
-    // Check if user already exists in our system
-    const { data: existingUser } = await admin
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle()
-
-    const { error } = await admin.from('workspace_members').insert({
-      workspace_id: id,
+  const { data: member, error } = await admin
+    .from('workspace_members')
+    .insert({
+      workspace_id: workspaceId,
       user_id: existingUser?.id ?? null,
       email,
-      role: inviteRole ?? 'viewer',
-      invited_by: user.id,
+      role: memberRole as 'publisher' | 'viewer',
+      invited_by: auth.userId,
+      invited_at: new Date().toISOString(),
       invite_token: inviteToken,
-      invite_expires_at: expiresAt,
+      invite_expires_at: inviteExpiresAt.toISOString(),
     })
+    .select('id, workspace_id, email, role, invited_at, invite_expires_at')
+    .single()
 
-    if (error) {
-      console.error('Create invitation error:', error)
-      return NextResponse.json({ error: 'Failed to send invitation' }, { status: 500 })
-    }
+  if (error || !member) {
+    console.error('Invite member error:', error)
+    return apiError('Failed to invite member', 'invite_failed', 500)
   }
 
-  // TODO: Send invitation email via Resend (S26)
+  await admin.from('audit_log').insert({
+    action: 'workspace.member_invite',
+    actor_id: auth.userId,
+    target_id: member.id,
+    target_type: 'workspace_member',
+    details: { email, role: memberRole, workspace_id: workspaceId },
+  })
 
-  return NextResponse.json({
-    success: true,
-    invite_token: inviteToken,
-    message: `Invitation sent to ${email}`,
-  }, { status: 201 })
-}
+  return apiSuccess(member, 201)
+})
+
+// GET /api/v1/workspaces/[id]/members — list workspace members
+export const GET = withApiAuth(async (_req: NextRequest, ctx, auth: ApiAuth) => {
+  const { id: workspaceId } = await ctx.params
+
+  const role = await getUserRole(auth.userId, workspaceId)
+  if (!role) return apiError('Not found', 'not_found', 404)
+
+  const admin = createAdminClient()
+  const { data: members, error } = await admin
+    .from('workspace_members')
+    .select('id, user_id, email, role, invited_at, accepted_at, invite_expires_at, created_at')
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('List members error:', error)
+    return apiError('Failed to list members', 'query_failed', 500)
+  }
+
+  return apiSuccess(members ?? [])
+})
