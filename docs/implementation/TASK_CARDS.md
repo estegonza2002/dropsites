@@ -1,14 +1,14 @@
 ---
-title: Agent Task Cards (Phase 1)
+title: Agent Task Cards (Phase 1 & Phase 2)
 owner: engineering
-version: "1.0"
-last_updated: 2026-03-26
+version: "2.0"
+last_updated: 2026-03-28
 depends_on:
   - implementation/PLAN.md
   - prd/PRD.md
 ---
 
-# DropSites — Agent Task Cards (Phase 1)
+# DropSites — Agent Task Cards (Phase 1 & Phase 2)
 
 > Each card is a self-contained prompt for a single agent session.
 > Copy-paste the card into a new Cursor agent chat. The agent will read the Cursor rule automatically and use these instructions to build the specified piece.
@@ -1913,4 +1913,1507 @@ pnpm test
 pnpm playwright test
 ```
 
-Then proceed to Phase 2 task cards (to be generated after Phase 1 completion).
+Then proceed to Phase 2 task cards below.
+
+---
+
+# Phase 2 — API, Billing, Enterprise & Abuse Scanning
+
+> Task cards for Phase 2 sessions. Each session maps to one or more M2.x milestones.
+> Sessions S45 through S69 cover M2.1 through M2.31.
+
+---
+
+## S45 — REST API v1 + OpenAPI Spec
+
+**Milestone:** M2.1 (REST API v1)
+**Depends on:** S44 (Phase 1 complete)
+
+### What to Build
+
+1. Install `swagger-jsdoc` and `swagger-ui-react` (or `next-swagger-doc`)
+2. Create `lib/api/openapi.ts`:
+   - Define the full OpenAPI 3.1 spec for all v1 endpoints
+   - Schemas for: Deployment, Workspace, Member, ApiKey, Error, PaginatedResponse
+   - Auth: Bearer token (API key) scheme
+3. Create `app/api/docs/route.ts`:
+   - GET handler that returns the OpenAPI JSON spec
+4. Create `app/api/docs/page.tsx`:
+   - Swagger UI rendering of the spec at `/api/docs`
+5. Harden existing `app/api/v1/deployments/route.ts`:
+   - POST: accept both session auth and API key Bearer auth
+   - GET: add query params `q` (slug search), `status` (active/archived/disabled), `sort` (created/updated/name), `page`, `per_page`
+   - Ensure JSON responses match OpenAPI schema exactly
+6. Create `app/api/v1/deployments/[slug]/route.ts`:
+   - GET: return single deployment details
+   - PATCH: update deployment metadata (name, slug, expiry, indexing, password)
+   - DELETE: soft-delete (archive) deployment, return 410 Gone on subsequent access
+7. Create `lib/api/auth.ts`:
+   - `authenticateRequest(req: Request): Promise<{ userId: string, workspaceId: string, method: 'session' | 'api_key' }>`
+   - Check for Bearer token in Authorization header, fall back to session cookie
+   - Validate API key against `api_keys` table, check not revoked, check not expired
+8. Create `lib/api/pagination.ts`:
+   - `paginate<T>(query, page, perPage): Promise<PaginatedResponse<T>>`
+   - Standard envelope: `{ data: T[], meta: { page, per_page, total, total_pages } }`
+9. Create `lib/api/response.ts`:
+   - Helpers: `apiSuccess(data, status)`, `apiError(message, code, status)`, `apiPaginated(data, meta)`
+10. Create contract tests: `tests/integration/api/contract.test.ts`
+    - Validate every endpoint response matches the OpenAPI spec
+11. Create `tests/integration/api/deployments.test.ts`:
+    - T-API-01 through T-API-10 from PRD Section 11.13
+
+### Gate
+
+- OpenAPI spec accessible at `/api/docs` and renders in Swagger UI
+- All deployment CRUD endpoints return responses matching the spec
+- Both session auth and API key Bearer auth work on all endpoints
+- Contract test suite passes: spec vs implementation diff = 0
+
+### Files Created
+
+`lib/api/openapi.ts`, `lib/api/auth.ts`, `lib/api/pagination.ts`, `lib/api/response.ts`, `app/api/docs/route.ts`, `app/api/docs/page.tsx`, `tests/integration/api/contract.test.ts`, `tests/integration/api/deployments.test.ts`
+
+### Files Modified
+
+`app/api/v1/deployments/route.ts`, `app/api/v1/deployments/[slug]/route.ts`
+
+---
+
+## S46 — API Key Management
+
+**Milestone:** M2.2 (API Key Management)
+**Depends on:** S45
+
+### What to Build
+
+1. Create `lib/api/keys.ts`:
+   - `generateApiKey(): { key: string, keyHash: string, prefix: string }` — generate a `ds_` prefixed key, store only the SHA-256 hash in DB, return full key once
+   - `hashApiKey(key: string): string` — SHA-256 hash for lookup
+   - `validateApiKey(key: string): Promise<ApiKeyRecord | null>` — lookup by hash, check revoked/expired
+   - `revokeApiKey(keyId: string, userId: string): Promise<void>`
+   - `listApiKeys(workspaceId: string): Promise<ApiKeyRecord[]>` — returns keys with prefix, name, created, last_used, revoked
+2. Create `app/api/v1/api-keys/route.ts`:
+   - POST: generate new key (name, optional expiry) — returns full key ONCE in response
+   - GET: list all keys for the workspace (never returns full key, only prefix + metadata)
+3. Create `app/api/v1/api-keys/[keyId]/route.ts`:
+   - DELETE: revoke a key
+   - PATCH: update key name or expiry
+4. Create `components/settings/api-keys-panel.tsx`:
+   - Table of keys: name, prefix (ds_xxxx...), created date, last used, status
+   - "Generate new key" button opens dialog
+   - Show full key ONCE after generation with copy button and warning
+   - Revoke button with confirmation dialog
+5. Create `components/settings/api-key-create-dialog.tsx`:
+   - Form: key name, optional expiry date
+   - On create: show the full key with copy-to-clipboard, "I've saved this key" confirmation before closing
+6. Add API keys section to workspace settings page
+7. Create `tests/integration/api/api-keys.test.ts`:
+   - Full lifecycle: create -> use -> revoke -> verify revoked key returns 401
+
+### Gate
+
+- API key generated with `ds_` prefix, full key shown once
+- Key authenticates API requests via Bearer header
+- Revoked key returns 401 on subsequent requests
+- Dashboard shows key list with metadata (never full key)
+
+### Files Created
+
+`lib/api/keys.ts`, `app/api/v1/api-keys/route.ts`, `app/api/v1/api-keys/[keyId]/route.ts`, `components/settings/api-keys-panel.tsx`, `components/settings/api-key-create-dialog.tsx`, `tests/integration/api/api-keys.test.ts`
+
+### Files Modified
+
+`app/(dashboard)/dashboard/settings/page.tsx`
+
+---
+
+## S47 — API Rate Limiting
+
+**Milestone:** M2.3 (API Rate Limiting)
+**Depends on:** S45
+
+### What to Build
+
+1. Create `lib/api/rate-limit.ts`:
+   - In-memory sliding window rate limiter (upgradeable to Redis later)
+   - `checkRateLimit(keyId: string, limits: RateLimitConfig): RateLimitResult`
+   - Supports per-minute, daily, and monthly windows
+   - Returns `{ allowed: boolean, remaining: number, resetAt: Date, retryAfter?: number }`
+   - Burst support: allow up to 3x per-minute limit in short bursts
+2. Create `lib/api/rate-limit-config.ts`:
+   - Rate limits per profile: free (30/min, 1000/day, 10000/month), pro (60/min, 5000/day, 50000/month), team (120/min, 10000/day, 100000/month)
+   - Limits loaded from `limit_profiles` table, never hardcoded
+3. Create `lib/api/middleware.ts`:
+   - `withRateLimit(handler)` — HOF that wraps API route handlers
+   - Sets response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+   - Returns 429 with `Retry-After` header when limit exceeded
+   - JSON body: `{ error: "Rate limit exceeded", retryAfter: N }`
+4. Apply rate limiting middleware to all `/api/v1/*` routes
+5. Create `tests/integration/api/rate-limit.test.ts`:
+   - T-API-11: 60th request in 1 minute returns 200
+   - T-API-12: 61st request returns 429 with Retry-After
+   - T-API-13: monthly quota enforcement
+   - Burst allowance test
+
+### Gate
+
+- 429 returned with Retry-After header when per-minute limit exceeded
+- Rate limit headers present on all API responses
+- Monthly quota enforcement blocks requests at limit
+- Burst mode allows short 3x spikes
+
+### Files Created
+
+`lib/api/rate-limit.ts`, `lib/api/rate-limit-config.ts`, `lib/api/middleware.ts`, `tests/integration/api/rate-limit.test.ts`
+
+### Files Modified
+
+All `app/api/v1/*/route.ts` files (wrap with rate limit middleware)
+
+---
+
+## S48 — Single-File PATCH Endpoint
+
+**Milestone:** M2.4 (Single-File PATCH)
+**Depends on:** S45
+
+### What to Build
+
+1. Update `app/api/v1/deployments/[slug]/files/[...path]/route.ts`:
+   - PATCH: accept `multipart/form-data` with new file content
+   - Validate the path exists in the deployment
+   - Reject paths outside deployment root (path traversal check)
+   - Upload new file to R2, replacing only the specified file
+   - Create a new `deployment_version` record
+   - Copy all other files from previous version to new version prefix
+   - Return updated deployment metadata with new version info
+2. Create `lib/upload/patch.ts`:
+   - `patchDeploymentFile(deploymentId: string, filePath: string, newContent: Buffer, userId: string): Promise<PatchResult>`
+   - Atomic operation: new version created, old version preserved for history
+   - Compute new SHA-256 hash for the updated file
+   - Check updated file against blocked content hashes
+3. Create `tests/integration/api/patch-file.test.ts`:
+   - T-API-08: update one file, verify others unchanged
+   - T-API-09: path outside deployment root returns 400
+   - Verify new version record created
+   - Verify hash updated for patched file only
+
+### Gate
+
+- PATCH updates exactly one file, all others unchanged at the deployment URL
+- New version record created in DB
+- Path traversal attempts rejected with 400
+- Response includes updated deployment metadata
+
+### Files Created
+
+`lib/upload/patch.ts`, `tests/integration/api/patch-file.test.ts`
+
+### Files Modified
+
+`app/api/v1/deployments/[slug]/files/[...path]/route.ts`
+
+---
+
+## S49 — Custom Domain Support
+
+**Milestone:** M2.5 (Custom Domains)
+**Depends on:** S44
+
+### What to Build
+
+1. Create `lib/domains/verify.ts`:
+   - `initiateDomainVerification(domain: string, deploymentId: string): Promise<{ cnameTarget: string, txtRecord: string }>`
+   - `checkDomainVerification(domain: string): Promise<'pending' | 'verified' | 'error'>`
+   - DNS lookup for CNAME and TXT verification records
+   - Reject reserved domains (dropsites.app subdomains, localhost, etc.)
+2. Create `lib/domains/tls.ts`:
+   - ACME client wrapper for Let's Encrypt certificate provisioning
+   - `provisionCertificate(domain: string): Promise<{ cert: string, key: string, expiresAt: Date }>`
+   - `renewCertificate(domain: string): Promise<void>`
+   - Certificate storage in `custom_domains` table
+3. Create `app/api/v1/domains/route.ts`:
+   - POST: add custom domain to a deployment (Pro+ only)
+   - GET: list custom domains for a workspace
+4. Create `app/api/v1/domains/[domainId]/route.ts`:
+   - GET: domain status + verification instructions
+   - DELETE: remove custom domain
+   - POST `/verify`: trigger verification check
+5. Create `components/deployments/custom-domain-panel.tsx`:
+   - Input for custom domain
+   - DNS setup instructions with CNAME target pre-filled and copy button
+   - Verification status badge (pending / verified / error)
+   - "Verify now" button
+   - TLS certificate status
+6. Update serving middleware to resolve custom domains:
+   - Check `custom_domains` table for incoming hostname
+   - If matched and verified, serve the linked deployment
+   - Keep the dropsites.app URL active as fallback
+7. Create `tests/integration/domains/custom-domain.test.ts`
+
+### Gate
+
+- Custom domain added with DNS instructions shown
+- Domain verification succeeds after correct DNS setup
+- TLS certificate provisioned for verified domain
+- Deployment accessible via both custom domain and dropsites.app URL
+- Only Pro+ profiles can add custom domains
+
+### Files Created
+
+`lib/domains/verify.ts`, `lib/domains/tls.ts`, `app/api/v1/domains/route.ts`, `app/api/v1/domains/[domainId]/route.ts`, `components/deployments/custom-domain-panel.tsx`, `tests/integration/domains/custom-domain.test.ts`
+
+### Files Modified
+
+`middleware.ts` (custom domain resolution)
+
+---
+
+## S50 — Per-Recipient Access Tokens
+
+**Milestone:** M2.6 (Per-Recipient Access Tokens)
+**Depends on:** S44
+
+### What to Build
+
+1. Create `lib/tokens/access-tokens.ts`:
+   - `generateAccessToken(deploymentId: string, name: string, options?: { maxViews?: number, expiresAt?: Date }): Promise<{ tokenId: string, token: string, url: string }>`
+   - `validateAccessToken(token: string, slug: string): Promise<AccessTokenRecord | null>`
+   - `revokeAccessToken(tokenId: string): Promise<void>`
+   - `listAccessTokens(deploymentId: string): Promise<AccessTokenRecord[]>`
+   - Token format: short alphanumeric string appended as `?t=abc123`
+2. Create `app/api/v1/deployments/[slug]/tokens/route.ts`:
+   - POST: create named token with optional view limit and expiry
+   - GET: list all tokens for the deployment with per-token analytics
+3. Create `app/api/v1/deployments/[slug]/tokens/[tokenId]/route.ts`:
+   - DELETE: revoke token
+   - GET: token detail with view count, last seen
+4. Create `components/deployments/access-tokens-panel.tsx`:
+   - Table: token name, unique URL, view count, last seen, status
+   - "Create token" dialog: name, optional view limit, optional expiry date
+   - Copy URL button per token
+   - Revoke button with confirmation
+5. Update serving middleware:
+   - If `?t=` param present, validate token before serving
+   - Record `token_id` on analytics events
+   - Reject revoked or expired tokens with 403
+   - Respect max view count — reject after limit
+6. Update analytics recording to include `token_id` field
+7. Create `tests/integration/tokens/access-tokens.test.ts`:
+   - Token creation, URL generation, view tracking, revocation, expiry
+
+### Gate
+
+- Named token produces unique URL with `?t=` param
+- Analytics track which token was used per view
+- Revoked token returns 403 on access
+- Per-token view count and last-seen visible in dashboard
+- View-limited tokens stop working after N views
+
+### Files Created
+
+`lib/tokens/access-tokens.ts`, `app/api/v1/deployments/[slug]/tokens/route.ts`, `app/api/v1/deployments/[slug]/tokens/[tokenId]/route.ts`, `components/deployments/access-tokens-panel.tsx`, `tests/integration/tokens/access-tokens.test.ts`
+
+### Files Modified
+
+`middleware.ts`, `lib/analytics/record.ts`
+
+---
+
+## S51 — Webhooks
+
+**Milestone:** M2.7 (Webhooks)
+**Depends on:** S45
+
+### What to Build
+
+1. Create `lib/webhooks/sign.ts`:
+   - `signPayload(payload: object, secret: string): string` — HMAC-SHA256 signature
+   - `verifySignature(payload: string, signature: string, secret: string): boolean`
+2. Create `lib/webhooks/dispatch.ts`:
+   - `dispatchWebhook(endpointId: string, event: WebhookEvent): Promise<void>`
+   - Events: `deployment.created`, `deployment.updated`, `deployment.deleted`, `deployment.disabled`, `deployment.reactivated`
+   - Payload: `{ event, slug, url, timestamp, actor, deployment: { id, name, version }, content_hash }`
+   - Retry: up to 3 attempts with exponential backoff (5s, 30s, 120s)
+   - Log each delivery attempt to `webhook_deliveries` table
+3. Create `lib/webhooks/manager.ts`:
+   - `registerEndpoint(workspaceId: string, url: string, events: string[], secret: string): Promise<WebhookEndpoint>`
+   - `listEndpoints(workspaceId: string): Promise<WebhookEndpoint[]>`
+   - `deleteEndpoint(endpointId: string): Promise<void>`
+   - `testEndpoint(endpointId: string): Promise<TestResult>` — sends a test ping
+4. Create `app/api/v1/webhooks/route.ts`:
+   - POST: register webhook endpoint (Team+ only)
+   - GET: list webhook endpoints for workspace
+5. Create `app/api/v1/webhooks/[webhookId]/route.ts`:
+   - DELETE: remove endpoint
+   - POST `/test`: send test event
+   - GET `/deliveries`: delivery log (last 50 events with status and response code)
+6. Create `components/settings/webhooks-panel.tsx`:
+   - Webhook endpoint list: URL, events subscribed, status, last delivery
+   - "Add webhook" dialog: URL, event checkboxes, auto-generated signing secret (copyable)
+   - Delivery log view: timestamp, event, status code, response time
+   - "Send test" button per endpoint
+7. Wire webhook dispatching into deployment lifecycle (create, update, delete, disable, reactivate)
+8. Create `tests/integration/webhooks/webhook.test.ts`:
+   - T-API-14: webhook fires on deployment created
+   - T-API-15: HMAC signature valid
+   - T-API-16: retry on failure, delivery log updated
+
+### Gate
+
+- Webhook fires on deployment create/update/delete with correct payload
+- HMAC-SHA256 signature verifiable with shared secret
+- Failed deliveries retried 3 times with backoff
+- Delivery log shows status codes and timestamps
+- Test endpoint receives and validates test ping
+
+### Files Created
+
+`lib/webhooks/sign.ts`, `lib/webhooks/dispatch.ts`, `lib/webhooks/manager.ts`, `app/api/v1/webhooks/route.ts`, `app/api/v1/webhooks/[webhookId]/route.ts`, `components/settings/webhooks-panel.tsx`, `tests/integration/webhooks/webhook.test.ts`
+
+### Files Modified
+
+`lib/upload/process.ts`, `app/api/v1/deployments/[slug]/route.ts`, `app/api/v1/deployments/[slug]/disable/route.ts`
+
+---
+
+## S52 — Version History
+
+**Milestone:** M2.8 (Version History)
+**Depends on:** S44
+
+### What to Build
+
+1. Create `lib/versions/history.ts`:
+   - `getVersionHistory(deploymentId: string): Promise<VersionRecord[]>` — last 3 versions (Pro+)
+   - `getVersionFiles(versionId: string): Promise<DeploymentFile[]>`
+   - `restoreVersion(deploymentId: string, versionId: string, userId: string): Promise<void>` — copy files from old version to new version prefix, create new version record pointing to restored files
+   - `previewVersion(versionId: string): Promise<string>` — return a temporary preview URL
+2. Create `app/api/v1/deployments/[slug]/versions/route.ts`:
+   - GET: list versions with metadata (timestamp, file count, size, source, publisher)
+3. Create `app/api/v1/deployments/[slug]/versions/[versionId]/route.ts`:
+   - GET: version detail + file list
+   - POST `/restore`: restore this version as live
+   - GET `/preview`: temporary preview URL (valid 1 hour)
+4. Create `components/deployments/version-history-panel.tsx`:
+   - Timeline of versions: version number, timestamp, publisher name, source (upload/editor/API), total size
+   - "Preview" button per version — opens in new tab
+   - "Restore" button per version — confirmation dialog before restore
+   - Current live version highlighted
+5. Add version history panel to deployment detail page
+6. Ensure upload/edit/patch operations create version records consistently
+7. Create `tests/integration/versions/version-history.test.ts`:
+   - Create 3 versions, restore version 1, verify correct files served
+   - T-DAT-04: correct files served after restore
+
+### Gate
+
+- Last 3 versions shown in deployment detail
+- Preview shows correct content for any previous version
+- Restore makes previous version live, correct files served
+- Version metadata (timestamp, publisher, source) recorded accurately
+- Only Pro+ profiles see version history
+
+### Files Created
+
+`lib/versions/history.ts`, `app/api/v1/deployments/[slug]/versions/route.ts`, `app/api/v1/deployments/[slug]/versions/[versionId]/route.ts`, `components/deployments/version-history-panel.tsx`, `tests/integration/versions/version-history.test.ts`
+
+### Files Modified
+
+`app/(dashboard)/dashboard/deployments/[slug]/page.tsx`
+
+---
+
+## S53 — Namespace Support
+
+**Milestone:** M2.9 (Namespace Support)
+**Depends on:** S44
+
+### What to Build
+
+1. Create `lib/namespaces/resolve.ts`:
+   - `resolveNamespacedUrl(namespace: string, slug: string): Promise<Deployment | null>`
+   - URL pattern: `dropsites.app/{namespace}/{slug}` or `{namespace}.dropsites.app/{slug}`
+   - Validate namespace belongs to a workspace
+2. Create `lib/namespaces/validate.ts`:
+   - `validateNamespace(namespace: string): { valid: boolean, errors: string[] }`
+   - Rules: 3-32 chars, `[a-z0-9-]`, not reserved, unique across platform
+   - `checkNamespaceAvailability(namespace: string): Promise<boolean>`
+3. Create `app/api/v1/workspaces/[id]/namespace/route.ts`:
+   - PUT: set or update workspace namespace
+   - DELETE: remove namespace
+4. Create `components/workspace/namespace-settings.tsx`:
+   - Input for namespace slug with availability check
+   - Preview of URL pattern
+   - Save button
+5. Update serving middleware:
+   - Parse namespace from URL path or subdomain
+   - Resolve deployment within the namespace scope
+   - Namespace deployments also accessible via direct slug URL
+6. Update `lib/slug/validate.ts` to accept optional namespace parameter for uniqueness checks
+7. Create `tests/integration/namespaces/namespace.test.ts`:
+   - Namespace deployment resolves at `/{namespace}/{slug}`
+   - Same slug in different namespaces resolves independently
+   - Namespace validation rules enforced
+
+### Gate
+
+- Workspace namespace set and visible in URL
+- Deployment resolves at `/{namespace}/{slug}`
+- Same slug allowed in different namespaces
+- Namespace validation rejects reserved words and invalid chars
+
+### Files Created
+
+`lib/namespaces/resolve.ts`, `lib/namespaces/validate.ts`, `app/api/v1/workspaces/[id]/namespace/route.ts`, `components/workspace/namespace-settings.tsx`, `tests/integration/namespaces/namespace.test.ts`
+
+### Files Modified
+
+`middleware.ts`, `lib/slug/validate.ts`
+
+---
+
+## S54 — Stripe Integration + Subscription Webhooks
+
+**Milestone:** M2.10 (Stripe Integration)
+**Depends on:** S44
+
+### What to Build
+
+1. Install `stripe` package
+2. Create `lib/billing/stripe-client.ts`:
+   - Initialize Stripe with `STRIPE_SECRET_KEY` from env
+   - Export typed Stripe client
+3. Create `lib/billing/products.ts`:
+   - Define product/price mapping: Free, Pro Monthly, Pro Annual, Team Monthly, Team Annual
+   - `getStripePriceId(profile: string, interval: 'month' | 'year'): string`
+4. Create `lib/billing/subscriptions.ts`:
+   - `createCheckoutSession(workspaceId: string, priceId: string, successUrl: string, cancelUrl: string): Promise<string>` — returns Stripe Checkout URL
+   - `getSubscription(workspaceId: string): Promise<SubscriptionDetails | null>`
+   - `cancelSubscription(workspaceId: string): Promise<void>`
+5. Create `app/api/v1/billing/checkout/route.ts`:
+   - POST: create Stripe Checkout session, return URL
+6. Create `app/api/v1/billing/portal/route.ts`:
+   - POST: create Stripe Customer Portal session for payment method updates
+7. Create `app/api/webhooks/stripe/route.ts`:
+   - Verify Stripe webhook signature
+   - Handle events:
+     - `checkout.session.completed` → `assignProfile(workspaceId, selectedProfile)`
+     - `customer.subscription.updated` → update profile on plan change
+     - `customer.subscription.deleted` → `assignProfile(workspaceId, 'free')`
+     - `invoice.payment_succeeded` → log payment
+     - `invoice.payment_failed` → initiate dunning (see S56)
+8. Create `lib/billing/webhook-handlers.ts`:
+   - Individual handler functions for each Stripe event
+   - All profile changes via `assignProfile()` — never direct DB writes
+9. Create `tests/integration/billing/stripe-webhooks.test.ts`:
+   - Mock Stripe webhook payloads for each event type
+   - Verify profile changes after subscription events
+
+### Gate
+
+- Stripe Checkout session created and redirects to Stripe
+- Webhook handler processes `checkout.session.completed` and assigns correct profile
+- Subscription cancellation reverts workspace to free profile
+- All profile changes go through `assignProfile()`
+
+### Files Created
+
+`lib/billing/stripe-client.ts`, `lib/billing/products.ts`, `lib/billing/subscriptions.ts`, `app/api/v1/billing/checkout/route.ts`, `app/api/v1/billing/portal/route.ts`, `app/api/webhooks/stripe/route.ts`, `lib/billing/webhook-handlers.ts`, `tests/integration/billing/stripe-webhooks.test.ts`
+
+---
+
+## S55 — Upgrade / Downgrade / Cancel Flows + Usage-Gated UI
+
+**Milestone:** M2.11 (Billing Flows)
+**Depends on:** S54
+
+### What to Build
+
+1. Create `app/(dashboard)/dashboard/settings/billing/page.tsx`:
+   - Current plan display with feature comparison
+   - Upgrade/downgrade buttons per plan
+   - Cancel subscription with confirmation
+   - Stripe Customer Portal link for payment method management
+   - Invoice history table (from Stripe API)
+2. Create `components/billing/pricing-table.tsx`:
+   - Plan comparison: Free, Pro, Team with features and prices
+   - Monthly/annual toggle
+   - Current plan highlighted
+   - Upgrade CTA buttons that create Checkout sessions
+3. Create `components/billing/plan-badge.tsx`:
+   - Small badge showing current plan in sidebar/header
+4. Create `components/billing/usage-gate.tsx`:
+   - HOC or wrapper that shows upgrade prompt when a feature requires a higher plan
+   - Used for: version history, custom domains, access tokens, webhooks, namespace
+   - Shows which plan unlocks the feature
+5. Create `components/billing/upgrade-prompt.tsx`:
+   - Inline prompt: "This feature requires Pro. Upgrade to unlock."
+   - Links to billing page
+6. Create `app/(marketing)/pricing/page.tsx`:
+   - Public pricing page with plan comparison
+   - Links to Stripe Checkout for each plan
+7. Create `lib/billing/feature-gates.ts`:
+   - `requiresProfile(feature: string): string` — returns minimum profile for a feature
+   - `isFeatureAvailable(workspaceId: string, feature: string): Promise<boolean>`
+8. Create `tests/e2e/billing/billing-flow.spec.ts`:
+   - Full lifecycle: free -> checkout -> Pro -> downgrade -> free
+
+### Gate
+
+- Billing page shows current plan and upgrade options
+- Checkout redirects to Stripe for payment
+- Feature-gated UI shows upgrade prompts for locked features
+- Plan badge visible in dashboard
+- Full upgrade/downgrade/cancel cycle works end-to-end
+
+### Files Created
+
+`app/(dashboard)/dashboard/settings/billing/page.tsx`, `components/billing/pricing-table.tsx`, `components/billing/plan-badge.tsx`, `components/billing/usage-gate.tsx`, `components/billing/upgrade-prompt.tsx`, `app/(marketing)/pricing/page.tsx`, `lib/billing/feature-gates.ts`, `tests/e2e/billing/billing-flow.spec.ts`
+
+### Files Modified
+
+Dashboard sidebar (plan badge), deployment detail pages (feature gates)
+
+---
+
+## S56 — Annual Billing + Dunning
+
+**Milestone:** M2.22 + M2.23 (Annual Billing + Failed Payment Dunning)
+**Depends on:** S54
+
+### What to Build
+
+1. Update `lib/billing/products.ts`:
+   - Add annual price IDs: Pro Annual (2 months free), Team Annual (2 months free)
+   - `getDiscountPercentage(interval: 'month' | 'year'): number` — returns 16 for annual
+2. Update `components/billing/pricing-table.tsx`:
+   - Monthly/annual toggle prominently displayed
+   - Annual price shows savings: "Save 16% — 2 months free"
+3. Create `lib/billing/dunning.ts`:
+   - `handlePaymentFailure(workspaceId: string): Promise<void>`:
+     - Record failure timestamp in workspace
+     - Send email to workspace owner: "Update your payment method"
+     - Set `grace_period_ends_at` = now + 7 days
+   - `checkGracePeriods(): Promise<void>`:
+     - Query workspaces where grace period expired
+     - Downgrade to free profile via `assignProfile()`
+   - `handlePaymentRecovery(workspaceId: string): Promise<void>`:
+     - Clear grace period, restore previous profile immediately
+4. Create `components/billing/payment-warning-banner.tsx`:
+   - Persistent banner during grace period: "Your payment failed. Update your card within N days to avoid losing access."
+   - Links to Stripe Customer Portal
+5. Update `app/api/webhooks/stripe/route.ts`:
+   - Handle `invoice.payment_failed` → call `handlePaymentFailure`
+   - Handle `invoice.payment_succeeded` after failure → call `handlePaymentRecovery`
+6. Create a Supabase Edge Function or cron: `supabase/functions/check-grace-periods/index.ts`
+   - Runs daily, calls `checkGracePeriods()`
+7. Create `tests/integration/billing/dunning.test.ts`:
+   - Simulate failed payment: grace period starts, banner shown
+   - Grace period expiry: workspace downgraded to free
+   - Payment recovery: workspace restored to paid profile
+
+### Gate
+
+- Annual billing option with 16% discount visible on pricing
+- Failed payment triggers email + grace period banner
+- After 7-day grace period: workspace downgraded to free
+- Payment recovery immediately restores paid profile
+- Invoice history accessible via Stripe portal
+
+### Files Created
+
+`lib/billing/dunning.ts`, `components/billing/payment-warning-banner.tsx`, `supabase/functions/check-grace-periods/index.ts`, `tests/integration/billing/dunning.test.ts`
+
+### Files Modified
+
+`lib/billing/products.ts`, `components/billing/pricing-table.tsx`, `app/api/webhooks/stripe/route.ts`
+
+---
+
+## S57 — Licence Key System
+
+**Milestone:** M2.12 (Licence Keys)
+**Depends on:** S44
+
+### What to Build
+
+1. Create `lib/licence/generate.ts`:
+   - `generateLicenceKey(options: { customer: string, expiresAt: Date, deploymentLimit: number, features: string[] }): string`
+   - Licence format: JSON payload + Ed25519 signature, base64-encoded
+   - Embeds: customer name, expiry, deployment count, feature flags
+2. Create `lib/licence/validate.ts`:
+   - `validateLicenceKey(key: string): LicenceResult` — verifies signature with embedded public key
+   - Works completely offline — no network call to dropsites.app
+   - Returns: `{ valid: boolean, customer: string, expiresAt: Date, features: string[], deploymentLimit: number }`
+   - Graceful degradation on expiry: warn but do not break serving
+3. Create `lib/licence/checker.ts`:
+   - `startLicenceChecker()`: validate licence on startup and every 24 hours
+   - On failure: log warning, set licence status to `expired` or `invalid`
+   - On success: update last-checked timestamp
+4. Create `app/api/v1/admin/licence/route.ts`:
+   - GET: licence status, customer, expiry, features, last checked
+5. Create `components/admin/licence-status-panel.tsx`:
+   - Licence status: valid/expired/invalid/missing
+   - Customer name, expiry date, feature flags
+   - Days until expiry warning
+6. Create `scripts/generate-licence.ts`:
+   - CLI script for generating licence keys (admin tool)
+   - Usage: `tsx scripts/generate-licence.ts --customer "Acme" --expires 2027-01-01 --deployments 1000`
+7. Create `tests/unit/licence/licence.test.ts`:
+   - Valid key validates offline
+   - Expired key returns invalid with graceful degradation
+   - Tampered key rejected
+   - Feature flags correctly parsed
+
+### Gate
+
+- Licence key generated with CLI script
+- Key validates offline without network access
+- Expired key warns but does not break serving
+- Admin console shows licence status
+- Tampered keys rejected
+
+### Files Created
+
+`lib/licence/generate.ts`, `lib/licence/validate.ts`, `lib/licence/checker.ts`, `app/api/v1/admin/licence/route.ts`, `components/admin/licence-status-panel.tsx`, `scripts/generate-licence.ts`, `tests/unit/licence/licence.test.ts`
+
+---
+
+## S58 — Helm Chart + Terraform Modules
+
+**Milestone:** M2.13 (Infrastructure as Code)
+**Depends on:** S44
+
+### What to Build
+
+1. Create `deploy/helm/dropsites/Chart.yaml`:
+   - Chart name: dropsites, version, appVersion
+2. Create `deploy/helm/dropsites/values.yaml`:
+   - Configurable: image, replicas, resources, env vars, ingress, TLS, storage backend, DB URL
+3. Create `deploy/helm/dropsites/templates/`:
+   - `deployment.yaml` — Kubernetes Deployment
+   - `service.yaml` — ClusterIP service on port 3000
+   - `ingress.yaml` — Ingress with TLS support
+   - `configmap.yaml` — non-secret configuration
+   - `secret.yaml` — secrets (DB URL, API keys, etc.)
+   - `hpa.yaml` — Horizontal Pod Autoscaler
+   - `_helpers.tpl` — template helpers
+4. Create `deploy/terraform/gcp/`:
+   - `main.tf` — GCP Cloud Run or GKE deployment
+   - `variables.tf` — inputs: project, region, instance size
+   - `outputs.tf` — deployment URL, health check URL
+   - `gcs.tf` — GCS bucket for storage (S3-compatible)
+   - `cloudsql.tf` — Cloud SQL PostgreSQL
+5. Create `deploy/terraform/aws/`:
+   - `main.tf` — ECS Fargate or EKS deployment
+   - `variables.tf`, `outputs.tf`
+   - `s3.tf` — S3 bucket for storage
+   - `rds.tf` — RDS PostgreSQL
+6. Create `deploy/terraform/azure/`:
+   - `main.tf` — Azure Container Instances or AKS
+   - `variables.tf`, `outputs.tf`
+   - `blob.tf` — Azure Blob (S3-compatible)
+   - `postgres.tf` — Azure Database for PostgreSQL
+7. Create `deploy/README.md`:
+   - Cloud mapping reference: DropSites component -> GCP / AWS / Azure equivalent
+   - Quick start for each provider
+
+### Gate
+
+- Helm chart validates: `helm lint deploy/helm/dropsites`
+- Terraform validates: `terraform validate` in each provider directory
+- Cloud mapping document covers all components
+- Values.yaml documents all configurable options
+
+### Files Created
+
+All files under `deploy/helm/` and `deploy/terraform/`, `deploy/README.md`
+
+---
+
+## S59 — S3 + PostgreSQL Backend Flexibility
+
+**Milestone:** M2.14 (Backend Flexibility)
+**Depends on:** S04
+
+### What to Build
+
+1. Update `lib/storage/index.ts`:
+   - Add backend options: `r2`, `s3`, `gcs`, `azure`, `minio`, `local`
+   - `gcs` backend: use S3-compatible interop mode (GCS supports S3 API)
+   - `azure` backend: use S3-compatible gateway or native Azure SDK behind the same interface
+   - `minio` backend: same as S3 but with MinIO-specific defaults
+   - `local` backend: filesystem storage for development (write to `./storage/` directory)
+2. Create `lib/storage/local-backend.ts`:
+   - Implements `StorageBackend` interface using `fs` module
+   - Stores files under `./storage/{bucket}/{key}`
+   - Useful for development and testing without cloud deps
+3. Update `lib/supabase/server.ts`:
+   - Support `DATABASE_BACKEND` env var: `supabase` (default) or `postgresql`
+   - When `postgresql`: use direct `pg` pool instead of Supabase client for data operations
+   - Auth still handled by Supabase (or external OIDC for self-hosted)
+4. Create `lib/db/pg-client.ts`:
+   - Direct PostgreSQL connection pool using `pg` package
+   - Same query interface as Supabase client for data operations
+   - Connection pooling with configurable pool size
+5. Create `lib/db/index.ts`:
+   - Factory that returns either Supabase client or direct PG client based on `DATABASE_BACKEND`
+6. Create `tests/integration/storage/backend-swap.test.ts`:
+   - Upload file via S3 backend, switch to local, upload again, verify both accessible
+   - Verify no data loss on backend swap
+7. Create `tests/integration/db/pg-client.test.ts`:
+   - Basic CRUD operations via direct PG client
+
+### Gate
+
+- Storage backend swappable via `STORAGE_BACKEND` env var
+- Local storage backend works for development
+- Direct PostgreSQL backend works without Supabase dependency
+- No data loss when switching backends (verified by test)
+
+### Files Created
+
+`lib/storage/local-backend.ts`, `lib/db/pg-client.ts`, `lib/db/index.ts`, `tests/integration/storage/backend-swap.test.ts`, `tests/integration/db/pg-client.test.ts`
+
+### Files Modified
+
+`lib/storage/index.ts`, `lib/supabase/server.ts`
+
+---
+
+## S60 — Abuse Posture B (Automated Scanning)
+
+**Milestone:** M2.15 (Abuse Scanning)
+**Depends on:** S45
+
+### What to Build
+
+1. Create `lib/abuse/safe-browsing.ts`:
+   - `checkUrl(url: string): Promise<SafeBrowsingResult>` — Google Safe Browsing Lookup API v4
+   - `checkUrls(urls: string[]): Promise<SafeBrowsingResult[]>` — batch check
+   - Handles API key from `SAFE_BROWSING_API_KEY` env var
+2. Create `lib/abuse/virustotal.ts`:
+   - `scanFile(hash: string): Promise<VirusTotalResult>` — check file hash against VirusTotal
+   - `scanUrl(url: string): Promise<VirusTotalResult>`
+   - Handles API key from `VIRUSTOTAL_API_KEY` env var
+3. Create `lib/abuse/url-extractor.ts`:
+   - `extractUrls(html: string): string[]` — extract all `href` and `src` URLs from HTML
+   - `extractUrlsFromJs(js: string): string[]` — extract URLs from JavaScript (regex-based)
+4. Create `lib/abuse/scanner.ts`:
+   - `scanDeployment(deploymentId: string): Promise<ScanResult>`
+   - Steps:
+     a. For each file: compute hash, check VirusTotal
+     b. For HTML/JS files: extract URLs, check Safe Browsing
+     c. If any match: quarantine deployment, notify admin
+     d. If clean: mark deployment as `active`
+   - Runs asynchronously — does not block upload response
+5. Create `lib/abuse/quarantine.ts`:
+   - `quarantineDeployment(deploymentId: string, reason: string): Promise<void>`
+   - Sets deployment status to `quarantined`, blocks serving
+   - Notifies admin (email + SMS)
+   - Notifies publisher with generic reason (no scan details)
+   - `reviewQuarantine(deploymentId: string, action: 'approve' | 'reject'): Promise<void>`
+6. Update upload pipeline (`lib/upload/process.ts`):
+   - After upload: set deployment to `processing` state
+   - Dispatch async scan job
+   - Deployment goes live within 60s if clean
+7. Create `components/admin/quarantine-queue.tsx`:
+   - List of quarantined deployments
+   - Approve / Reject buttons per deployment
+   - Scan details visible to admin only
+8. Create cron/Edge Function: `supabase/functions/weekly-rescan/index.ts`:
+   - Re-scan all active deployments weekly
+   - Quarantine any newly flagged content
+9. Create `tests/integration/abuse/scanner.test.ts`:
+   - Mock Safe Browsing and VirusTotal APIs
+   - Malicious file quarantined within 60s
+   - Clean file goes live
+   - Re-scan catches newly flagged content
+
+### Gate
+
+- Known malicious file hash quarantined within 60s of upload
+- URLs in HTML checked against Safe Browsing
+- Quarantined deployments blocked from serving
+- Admin can approve/reject quarantined content
+- Weekly re-scan runs and flags new threats
+- Publisher notified of quarantine with generic reason
+
+### Files Created
+
+`lib/abuse/safe-browsing.ts`, `lib/abuse/virustotal.ts`, `lib/abuse/url-extractor.ts`, `lib/abuse/scanner.ts`, `lib/abuse/quarantine.ts`, `components/admin/quarantine-queue.tsx`, `supabase/functions/weekly-rescan/index.ts`, `tests/integration/abuse/scanner.test.ts`
+
+### Files Modified
+
+`lib/upload/process.ts`
+
+---
+
+## S61 — Assisted Deployment + Runbook
+
+**Milestone:** M2.16 (First Assisted Deployment)
+**Depends on:** S58
+
+### What to Build
+
+1. Create `deploy/runbooks/gcp.md`:
+   - Step-by-step: GCP project setup, enable APIs, Terraform apply, DNS config, TLS, health check
+   - Includes screenshots/commands for each step
+   - Post-deployment verification checklist
+2. Create `deploy/runbooks/aws.md`:
+   - Step-by-step: AWS account setup, IAM roles, Terraform apply, Route53, ACM cert, health check
+3. Create `deploy/runbooks/azure.md`:
+   - Step-by-step: Azure subscription, resource group, Terraform apply, DNS, TLS, health check
+4. Create `deploy/runbooks/verification-checklist.md`:
+   - Checklist: storage connectivity, DB connectivity, auth flow, TLS valid, health endpoint 200, deployment upload and serve, licence valid
+5. Create `scripts/verify-deployment.ts`:
+   - Automated verification script that runs the checklist
+   - `tsx scripts/verify-deployment.ts --url https://customer.example.com`
+   - Checks: /health, upload test file, serve test file, auth flow, TLS cert validity
+   - Outputs pass/fail for each check
+6. Update `deploy/README.md` with links to all runbooks
+
+### Gate
+
+- All three provider runbooks are complete and self-contained
+- Verification script runs and reports pass/fail for all checks
+- Runbook follows Terraform output values for DNS configuration
+
+### Files Created
+
+`deploy/runbooks/gcp.md`, `deploy/runbooks/aws.md`, `deploy/runbooks/azure.md`, `deploy/runbooks/verification-checklist.md`, `scripts/verify-deployment.ts`
+
+### Files Modified
+
+`deploy/README.md`
+
+---
+
+## S62 — Workspace API Endpoints
+
+**Milestone:** M2.17 (Workspace Model API)
+**Depends on:** S45, S18
+
+### What to Build
+
+1. Create `app/api/v1/workspaces/route.ts`:
+   - POST: create a new workspace (name, optional namespace)
+   - GET: list workspaces the caller is a member of
+2. Create `app/api/v1/workspaces/[id]/route.ts`:
+   - GET: workspace detail (name, namespace, member count, plan, created)
+   - PATCH: update workspace settings (name, namespace)
+   - DELETE: delete workspace (owner only, requires confirmation token)
+3. Create `app/api/v1/workspaces/[id]/members/route.ts`:
+   - POST: invite member by email (sends invitation email)
+   - GET: list workspace members with roles
+4. Create `app/api/v1/workspaces/[id]/members/[userId]/route.ts`:
+   - PATCH: update member role (owner/publisher/viewer)
+   - DELETE: remove member (deployments transfer to owner)
+5. Create `app/api/v1/workspaces/[id]/analytics/route.ts`:
+   - GET: aggregate analytics for all workspace deployments
+   - Query params: `from`, `to`, `metric` (views/bandwidth/visitors)
+6. Create `tests/integration/api/workspaces.test.ts`:
+   - T-API-18: full lifecycle — create, invite, role change, remove member
+   - Verify deployment transfer on member removal
+   - Verify RLS policies enforce workspace access
+
+### Gate
+
+- Full workspace CRUD via API
+- Member invite sends email, accept link works
+- Role change reflected immediately
+- Member removal transfers their deployments to owner
+- RLS enforces workspace boundaries
+
+### Files Created
+
+`app/api/v1/workspaces/route.ts`, `app/api/v1/workspaces/[id]/route.ts`, `app/api/v1/workspaces/[id]/members/route.ts`, `app/api/v1/workspaces/[id]/members/[userId]/route.ts`, `app/api/v1/workspaces/[id]/analytics/route.ts`, `tests/integration/api/workspaces.test.ts`
+
+---
+
+## S63 — Penetration Test Prep
+
+**Milestone:** M2.18 (Security Validation)
+**Depends on:** S62
+
+### What to Build
+
+1. Create `tests/security/owasp-zap.config.ts`:
+   - OWASP ZAP automation framework config
+   - Target: all API endpoints + dashboard + serving layer
+   - Rules: OWASP Top 10 checks enabled
+2. Create `tests/security/pentest-scope.md`:
+   - Define scope for third-party pentest: endpoints, auth methods, serving layer
+   - Exclusions: Stripe-hosted pages, third-party auth providers
+3. Run and fix all findings from OWASP ZAP automated scan:
+   - Review CSP headers on all routes
+   - Review CORS configuration
+   - Review authentication bypass vectors
+   - Review authorization (IDOR) on all API endpoints
+   - Review input validation on all form fields and API params
+4. Create `tests/security/api-security.test.ts`:
+   - T-SEC-01 through T-SEC-18 from PRD Section 11.14
+   - SQL injection on all query params
+   - XSS on deployment name and slug
+   - CSRF on state-changing endpoints
+   - Path traversal on file serving
+   - Password prompt bypass
+   - IDOR on deployment UUIDs
+   - Error response information leakage
+5. Document all findings and fixes in `docs/security/pentest-prep.md`
+
+### Gate
+
+- OWASP ZAP scan returns zero high or critical findings
+- All T-SEC tests pass
+- No stack traces or internal paths in any error response
+- CSP headers present and correct on all routes
+- Pentest scope document ready for third-party engagement
+
+### Files Created
+
+`tests/security/owasp-zap.config.ts`, `tests/security/pentest-scope.md`, `tests/security/api-security.test.ts`, `docs/security/pentest-prep.md`
+
+---
+
+## S64 — Data Residency (EU Region)
+
+**Milestone:** M2.19 (Data Residency)
+**Depends on:** S59
+
+### What to Build
+
+1. Create `lib/storage/region.ts`:
+   - `getStorageRegion(workspaceId: string): Promise<'us' | 'eu'>`
+   - `getRegionBucket(region: 'us' | 'eu'): string` — returns region-specific R2 bucket name
+   - Region set at workspace level, inherited by all deployments
+2. Create `lib/storage/multi-region.ts`:
+   - Wrapper around storage backend that routes to correct regional bucket
+   - `upload(workspaceId, key, body, contentType)` — routes to workspace's region bucket
+   - `get(workspaceId, key)` — reads from workspace's region bucket
+3. Update `components/workspace/workspace-settings.tsx`:
+   - Data residency dropdown: US (default), EU
+   - Only available for Team+ profiles
+   - Warning: "Changing region will require re-uploading all deployments"
+4. Update serving middleware:
+   - Resolve deployment's workspace region
+   - Fetch files from correct regional bucket
+5. Create `tests/integration/storage/data-residency.test.ts`:
+   - EU workspace deployment stored in EU bucket
+   - US workspace deployment stored in US bucket
+   - Serving resolves correct bucket per workspace
+
+### Gate
+
+- EU workspace deployment files stored in EU-region R2 bucket
+- Serving layer resolves correct regional bucket
+- Data residency setting available for Team+ only
+- Region selection documented in privacy policy
+
+### Files Created
+
+`lib/storage/region.ts`, `lib/storage/multi-region.ts`, `tests/integration/storage/data-residency.test.ts`
+
+### Files Modified
+
+`components/workspace/workspace-settings.tsx`, `middleware.ts`, `lib/upload/process.ts`
+
+---
+
+## S65 — 2FA + Password Auth
+
+**Milestone:** M2.20 + M2.21 (2FA + Password Auth)
+**Depends on:** S44
+
+### What to Build
+
+1. Install `otplib` for TOTP generation and `bcryptjs` for password hashing
+2. Create `lib/auth/totp.ts`:
+   - `generateTotpSecret(userId: string): { secret: string, qrCodeUrl: string, backupCodes: string[] }`
+   - `verifyTotp(userId: string, code: string): boolean`
+   - `verifyBackupCode(userId: string, code: string): Promise<boolean>` — single use, mark as used
+   - Generate 8 backup codes on setup
+3. Create `lib/auth/password.ts`:
+   - `hashPassword(password: string): Promise<string>` — bcrypt with cost factor >= 12
+   - `verifyPassword(password: string, hash: string): Promise<boolean>`
+   - `checkPasswordStrength(password: string): { score: number, feedback: string[] }`
+   - `checkPwnedPassword(password: string): Promise<boolean>` — HaveIBeenPwned k-anonymity API
+4. Create `app/(auth)/setup-2fa/page.tsx`:
+   - QR code for authenticator app
+   - Manual secret entry option
+   - Verify first TOTP code to confirm setup
+   - Show backup codes (downloadable), confirm saved before closing
+5. Create `app/(auth)/verify-2fa/page.tsx`:
+   - TOTP code input after primary auth
+   - "Use backup code" link
+   - Rate-limited: 5 attempts per 15 minutes
+6. Create `app/(auth)/register/page.tsx`:
+   - Email + password registration with strength meter
+   - Password requirements shown inline
+   - Pwned password warning (non-blocking)
+7. Create `app/(auth)/forgot-password/page.tsx`:
+   - Email input, send reset link (15 min expiry, single use)
+8. Create `components/auth/password-strength-meter.tsx`:
+   - Visual strength indicator: weak/fair/strong
+   - Inline feedback on what to improve
+9. Create `components/settings/two-factor-settings.tsx`:
+   - Enable/disable 2FA from account security settings
+   - Show backup codes (regenerate option)
+   - Workspace-enforced 2FA indicator
+10. Update auth middleware:
+    - After primary auth, check if 2FA enabled
+    - If yes, redirect to `/verify-2fa` before granting dashboard access
+    - Workspace 2FA enforcement: check on login if workspace requires 2FA
+11. Create `tests/integration/auth/totp.test.ts` and `tests/integration/auth/password.test.ts`
+
+### Gate
+
+- TOTP setup shows QR code, first code verification completes setup
+- 2FA prompt shown on login when enabled
+- Backup codes work as single-use fallback
+- Password auth with strength meter and HaveIBeenPwned check
+- Forgot password flow sends link, resets password
+- Workspace-enforced 2FA locks out non-compliant members
+
+### Files Created
+
+`lib/auth/totp.ts`, `lib/auth/password.ts`, `app/(auth)/setup-2fa/page.tsx`, `app/(auth)/verify-2fa/page.tsx`, `app/(auth)/register/page.tsx`, `app/(auth)/forgot-password/page.tsx`, `components/auth/password-strength-meter.tsx`, `components/settings/two-factor-settings.tsx`, `tests/integration/auth/totp.test.ts`, `tests/integration/auth/password.test.ts`
+
+### Files Modified
+
+`middleware.ts`, auth layout
+
+---
+
+## S66 — Geographic + Device Analytics
+
+**Milestone:** M2.24 (Advanced Analytics)
+**Depends on:** S44, S29
+
+### What to Build
+
+1. Create `lib/analytics/geo.ts`:
+   - `resolveCountry(ip: string): string | null` — using a lightweight GeoIP database (e.g., `maxmind` or Cloudflare `cf-ipcountry` header)
+   - Never store the IP address — only the resolved country code
+2. Create `lib/analytics/device.ts`:
+   - `parseUserAgent(ua: string): { deviceClass: 'mobile' | 'tablet' | 'desktop', browser: string }`
+   - Lightweight UA parsing — no heavy library needed
+3. Update `lib/analytics/record.ts`:
+   - Add `country_code` and `device_class` and `browser_family` fields to analytics events
+   - Derive from request headers at recording time
+4. Create `components/analytics/country-chart.tsx`:
+   - Bar chart or simple map showing top 10 countries by view count
+   - Uses country codes to display country names and flags
+5. Create `components/analytics/device-chart.tsx`:
+   - Donut chart: mobile / tablet / desktop percentage
+   - Browser breakdown: Chrome, Safari, Firefox, Edge, Other
+6. Create `components/analytics/comparison-mode.tsx`:
+   - Date range picker for two periods
+   - Delta display: views, bandwidth, unique visitors
+   - Green/red indicators for increase/decrease
+7. Create `components/analytics/shareable-link.tsx`:
+   - Generate read-only analytics link (no login required)
+   - Token-based access, optional expiry
+8. Create `app/analytics/[token]/page.tsx`:
+   - Public analytics view for shareable links
+   - Read-only dashboard with charts
+9. Add geo and device charts to deployment analytics page
+10. Create `tests/integration/analytics/geo-device.test.ts`
+
+### Gate
+
+- Country-level data recorded per view (IP not stored)
+- Device and browser breakdown visible in analytics
+- Comparison mode shows delta between two date ranges
+- Shareable analytics link works without login
+- Top 10 countries chart renders with real data
+
+### Files Created
+
+`lib/analytics/geo.ts`, `lib/analytics/device.ts`, `components/analytics/country-chart.tsx`, `components/analytics/device-chart.tsx`, `components/analytics/comparison-mode.tsx`, `components/analytics/shareable-link.tsx`, `app/analytics/[token]/page.tsx`, `tests/integration/analytics/geo-device.test.ts`
+
+### Files Modified
+
+`lib/analytics/record.ts`, deployment analytics page
+
+---
+
+## S67 — CORS Header Control
+
+**Milestone:** M2.25 (CORS Control)
+**Depends on:** S44
+
+### What to Build
+
+1. Create `lib/serving/cors.ts`:
+   - `getCorsConfig(deploymentId: string): Promise<CorsConfig | null>`
+   - `buildCorsHeaders(config: CorsConfig, origin: string): Record<string, string>`
+   - Default: no CORS headers (same-origin policy applies)
+   - Simple mode: `Access-Control-Allow-Origin: *`
+   - Custom mode: specific origins, methods, headers from config
+   - Validate CORS config at save time — reject malformed origins
+2. Update `lib/serving/headers.ts`:
+   - Apply CORS headers from deployment config
+   - Handle preflight OPTIONS requests
+3. Create `components/deployments/cors-settings.tsx`:
+   - Toggle: "Allow all origins (CORS *)"
+   - Advanced: list of allowed origins, methods, headers
+   - Input validation for origin format
+4. Support `dropsites.json` CORS config:
+   ```json
+   { "cors": { "origins": ["https://example.com"], "methods": ["GET"], "headers": ["Content-Type"] } }
+   ```
+5. Update deployment settings page to include CORS panel
+6. Create `tests/integration/serving/cors.test.ts`:
+   - No CORS headers by default
+   - Wildcard CORS verified with cross-origin fetch
+   - Custom origin list enforced
+   - Malformed origins rejected at save time
+
+### Gate
+
+- No CORS headers by default
+- `CORS *` toggle adds `Access-Control-Allow-Origin: *` to all responses
+- Custom origin list correctly filters requests
+- Preflight OPTIONS requests handled
+- CORS config via dropsites.json respected
+
+### Files Created
+
+`lib/serving/cors.ts`, `components/deployments/cors-settings.tsx`, `tests/integration/serving/cors.test.ts`
+
+### Files Modified
+
+`lib/serving/headers.ts`, `middleware.ts`, deployment settings page
+
+---
+
+## S68 — Workspace Transfer + Advanced Management
+
+**Milestone:** M2.26 (Workspace Transfer)
+**Depends on:** S62
+
+### What to Build
+
+1. Create `lib/workspaces/transfer.ts`:
+   - `initiateTransfer(workspaceId: string, newOwnerId: string, currentOwnerId: string): Promise<TransferToken>`
+   - `confirmTransfer(token: string, newOwnerId: string): Promise<void>`
+   - Transfer requires confirmation from the new owner (email link)
+   - Previous owner demoted to Publisher role
+2. Create `app/api/v1/workspaces/[id]/transfer/route.ts`:
+   - POST: initiate transfer (current owner only)
+   - PUT: confirm transfer (new owner, with token)
+3. Create `components/workspace/transfer-dialog.tsx`:
+   - Select new owner from current members
+   - Confirmation dialog explaining consequences
+4. Create `lib/workspaces/defaults.ts`:
+   - `getWorkspaceDefaults(workspaceId: string): Promise<WorkspaceDefaults>`
+   - `setWorkspaceDefaults(workspaceId: string, defaults: WorkspaceDefaults): Promise<void>`
+   - Defaults: expiry period, indexing on/off, password required, classification
+5. Create `components/workspace/default-settings.tsx`:
+   - Form for workspace-wide deployment defaults
+   - Applied to all new deployments in the workspace
+6. Create `components/workspace/activity-feed.tsx`:
+   - Last 100 workspace events: published, updated, deleted, invited, role changed
+   - Real-time or on-refresh
+7. Create `lib/workspaces/guest-access.ts`:
+   - `generateGuestLink(workspaceId: string): Promise<string>` — read-only view token
+   - `validateGuestToken(token: string): Promise<WorkspaceGuestAccess | null>`
+8. Create `app/workspace/[token]/page.tsx`:
+   - Read-only workspace view: deployment list + analytics, no edit actions
+9. Create `tests/integration/workspaces/transfer.test.ts`:
+   - Full transfer cycle: initiate -> confirm -> verify new owner, old owner demoted
+
+### Gate
+
+- Workspace transfer requires confirmation from new owner
+- Previous owner becomes Publisher after transfer
+- Workspace defaults applied to new deployments
+- Activity feed shows last 100 events
+- Guest link provides read-only workspace view
+
+### Files Created
+
+`lib/workspaces/transfer.ts`, `app/api/v1/workspaces/[id]/transfer/route.ts`, `components/workspace/transfer-dialog.tsx`, `lib/workspaces/defaults.ts`, `components/workspace/default-settings.tsx`, `components/workspace/activity-feed.tsx`, `lib/workspaces/guest-access.ts`, `app/workspace/[token]/page.tsx`, `tests/integration/workspaces/transfer.test.ts`
+
+### Files Modified
+
+`app/(dashboard)/dashboard/settings/page.tsx`
+
+---
+
+## S69 — JS SDK + CLI + GitHub Actions
+
+**Milestone:** M2.27 (Developer Tools)
+**Depends on:** S45, S46
+
+### What to Build
+
+1. Create `packages/sdk/` directory structure:
+   - `packages/sdk/package.json` — `@dropsites/sdk`, TypeScript, ESM + CJS
+   - `packages/sdk/src/index.ts` — main export
+   - `packages/sdk/src/client.ts`:
+     - `new DropSitesClient({ apiKey, baseUrl })`
+     - Methods: `deploy(file, options)`, `list(options)`, `get(slug)`, `update(slug, file)`, `delete(slug)`, `open(slug)`
+     - Handles auth, pagination, error wrapping
+   - `packages/sdk/src/types.ts` — TypeScript types matching OpenAPI schema
+   - `packages/sdk/src/errors.ts` — SDK-specific error classes
+2. Create `packages/cli/` directory structure:
+   - `packages/cli/package.json` — `@dropsites/cli`, bin: `dropsites`
+   - `packages/cli/src/index.ts` — CLI entry point using `commander`
+   - `packages/cli/src/commands/deploy.ts` — `dropsites deploy ./dist --slug my-site --workspace ws_id`
+   - `packages/cli/src/commands/list.ts` — `dropsites list`
+   - `packages/cli/src/commands/delete.ts` — `dropsites delete my-slug`
+   - `packages/cli/src/commands/update.ts` — `dropsites update my-slug ./dist`
+   - `packages/cli/src/commands/open.ts` — `dropsites open my-slug` (opens URL in browser)
+   - `packages/cli/src/commands/login.ts` — `dropsites login` generates API key, stores in `~/.dropsites/config`
+   - `packages/cli/src/config.ts` — read/write `~/.dropsites/config` (API key, base URL)
+3. Create `packages/github-action/`:
+   - `packages/github-action/action.yml` — GitHub Action metadata
+   - `packages/github-action/src/index.ts` — action entry point
+   - Inputs: `api-key`, `directory`, `slug`, `workspace`
+   - Uses SDK internally to deploy
+4. Create `tests/integration/sdk/sdk.test.ts`:
+   - T-API-19: JS client publishes a deployment end-to-end
+5. Create `tests/e2e/cli/cli.spec.ts`:
+   - T-API-20: CLI deploys and returns URL
+6. Update root `package.json` with workspaces config for monorepo
+
+### Gate
+
+- SDK: `new DropSitesClient({ apiKey }).deploy(file)` returns URL
+- CLI: `dropsites deploy ./dist` publishes and prints URL in under 10 seconds
+- CLI: `dropsites login` stores API key in config file
+- GitHub Action: deploys on push, returns URL in action output
+- All packages build and type-check cleanly
+
+### Files Created
+
+All files under `packages/sdk/`, `packages/cli/`, `packages/github-action/`, `tests/integration/sdk/sdk.test.ts`, `tests/e2e/cli/cli.spec.ts`
+
+### Files Modified
+
+Root `package.json` (workspaces)
+
+---
+
+## S70 — Backup Strategy + Disaster Recovery
+
+**Milestone:** M2.28 (Backup & DR)
+**Depends on:** S59
+
+### What to Build
+
+1. Create `lib/backup/daily-backup.ts`:
+   - `runDailyBackup(): Promise<BackupResult>`
+   - Copy all deployment files from primary R2 bucket to backup R2 bucket (different region)
+   - Export database via `pg_dump` to backup storage
+   - Retain 30 days of daily backups
+   - Delete backups older than 30 days
+2. Create `lib/backup/restore.ts`:
+   - `restoreFromBackup(backupDate: string): Promise<RestoreResult>`
+   - Restore database from backup dump
+   - Restore deployment files from backup bucket
+   - Verify integrity: compare file hashes post-restore
+3. Create `supabase/functions/daily-backup/index.ts`:
+   - Scheduled Edge Function (runs daily at 02:00 UTC)
+   - Calls `runDailyBackup()`
+   - Logs result to audit log
+4. Create `scripts/monthly-restore-test.ts`:
+   - Select random sample of 10 deployments
+   - Restore from yesterday's backup
+   - Verify each deployment serves correctly
+   - Log results
+5. Create `deploy/runbooks/disaster-recovery.md`:
+   - Scenarios: database loss, R2 unavailability, application tier crash
+   - Step-by-step recovery for each scenario
+   - RTO target: < 1 hour
+   - Contact tree and escalation path
+6. Create `lib/backup/retention.ts`:
+   - Log retention policy enforcement:
+     - Application logs: 90 days
+     - Audit logs: 2 years
+     - Analytics events: 13 months
+   - `enforceRetention(): Promise<void>` — delete expired records
+7. Create `tests/integration/backup/backup-restore.test.ts`:
+   - T-DAT-05: backup and restore, all deployments accessible
+
+### Gate
+
+- Daily backup copies files and DB dump to separate region
+- Restore from backup makes deployments accessible
+- Monthly restore test script passes
+- Disaster recovery runbook covers all failure scenarios
+- 30-day retention enforced, old backups cleaned up
+
+### Files Created
+
+`lib/backup/daily-backup.ts`, `lib/backup/restore.ts`, `lib/backup/retention.ts`, `supabase/functions/daily-backup/index.ts`, `scripts/monthly-restore-test.ts`, `deploy/runbooks/disaster-recovery.md`, `tests/integration/backup/backup-restore.test.ts`
+
+---
+
+## S71 — SLA Document + Status Page Uptime
+
+**Milestone:** M2.29 (SLA & Uptime)
+**Depends on:** S54, S36
+
+### What to Build
+
+1. Create `app/(marketing)/sla/page.tsx`:
+   - Published SLA document defining:
+     - Uptime commitment: 99.9%
+     - Measurement period: calendar month
+     - Exclusions: planned maintenance, force majeure
+     - Service credits: pro-rata credit for downtime below 99.9%
+2. Create `lib/billing/service-credits.ts`:
+   - `calculateServiceCredit(workspaceId: string, month: string): Promise<CreditAmount>`
+   - Query uptime data for the month
+   - If below 99.9%: calculate pro-rata credit
+   - `applyServiceCredit(workspaceId: string, amount: number): Promise<void>` — create Stripe credit note
+3. Update status page to show 90-day rolling uptime history:
+   - Daily uptime percentage
+   - Incident timeline
+   - Current month SLA status
+4. Create `lib/health/uptime-tracker.ts`:
+   - `recordUptimeCheck(healthy: boolean): Promise<void>` — called every minute
+   - `getUptimeHistory(days: number): Promise<UptimeRecord[]>`
+   - `calculateMonthlyUptime(month: string): Promise<number>` — percentage
+5. Create `supabase/functions/uptime-check/index.ts`:
+   - Runs every minute, calls health endpoint
+   - Records result to uptime table
+6. Link SLA from pricing page and footer
+7. Create `tests/integration/billing/service-credits.test.ts`
+
+### Gate
+
+- SLA document published at `/sla`
+- 90-day uptime history visible on status page
+- Service credits calculated when uptime falls below 99.9%
+- Credits applied to next Stripe invoice
+- SLA linked from pricing page
+
+### Files Created
+
+`app/(marketing)/sla/page.tsx`, `lib/billing/service-credits.ts`, `lib/health/uptime-tracker.ts`, `supabase/functions/uptime-check/index.ts`, `tests/integration/billing/service-credits.test.ts`
+
+### Files Modified
+
+Status page, pricing page, footer
+
+---
+
+## S72 — Deployment Preview Thumbnails
+
+**Milestone:** M2.30 (Preview Thumbnails)
+**Depends on:** S44
+
+### What to Build
+
+1. Create `lib/thumbnails/generator.ts`:
+   - `generateThumbnail(deploymentUrl: string): Promise<Buffer>` — headless browser screenshot
+   - Uses Playwright in a sandboxed context
+   - Viewport: 1280x800, captures above the fold
+   - Output: WebP format, max 100 KB
+   - Timeout: 30 seconds max
+2. Create `lib/thumbnails/storage.ts`:
+   - `storeThumbnail(deploymentId: string, thumbnail: Buffer): Promise<string>` — upload to R2, return URL
+   - `getThumbnailUrl(deploymentId: string): Promise<string | null>`
+3. Create `lib/thumbnails/queue.ts`:
+   - Async thumbnail generation queue
+   - Triggered after publish, overwrite, or editor publish
+   - Does not block deployment going live
+   - Placeholder image served until thumbnail ready
+4. Create `components/deployments/thumbnail-preview.tsx`:
+   - Small thumbnail image in deployment list rows
+   - Placeholder skeleton while generating
+   - Fallback image if generation fails
+5. Update deployment list and detail pages to show thumbnails
+6. Create `tests/integration/thumbnails/thumbnail.test.ts`:
+   - T-PERF-11: thumbnail generated within 30 seconds of publish
+   - Thumbnail stored and accessible via URL
+   - Placeholder shown before thumbnail ready
+
+### Gate
+
+- Thumbnail generated as WebP within 30 seconds of publish
+- Thumbnail visible in deployment list rows
+- Placeholder shown while thumbnail generates
+- Thumbnail regenerated on overwrite or edit publish
+- Generation does not block deployment going live
+
+### Files Created
+
+`lib/thumbnails/generator.ts`, `lib/thumbnails/storage.ts`, `lib/thumbnails/queue.ts`, `components/deployments/thumbnail-preview.tsx`, `tests/integration/thumbnails/thumbnail.test.ts`
+
+### Files Modified
+
+`components/deployments/deployment-row.tsx`, `app/(dashboard)/dashboard/deployments/[slug]/page.tsx`
+
+---
+
+## S73 — Analytics PDF Export + Global Search
+
+**Milestone:** M2.31 (PDF Export + Global Search)
+**Depends on:** S66
+
+### What to Build
+
+1. Install `@react-pdf/renderer` or `pdfkit` for server-side PDF generation
+2. Create `lib/analytics/pdf-export.ts`:
+   - `generateAnalyticsPdf(deploymentId: string, dateRange: { from: Date, to: Date }): Promise<Buffer>`
+   - PDF includes: cover page (DropSites branding, publisher name, deployment name, date range), views chart, bandwidth chart, top referrers, device breakdown, country breakdown
+   - Branded with DropSites logo and colours
+3. Create `app/api/v1/deployments/[slug]/analytics/export/route.ts`:
+   - POST: generate PDF for date range, return as downloadable file
+   - Content-Type: `application/pdf`
+4. Create `components/analytics/export-pdf-button.tsx`:
+   - Date range picker + "Export PDF" button
+   - Shows loading state during generation
+   - Triggers download on completion
+5. Create `lib/search/global-search.ts`:
+   - `globalSearch(userId: string, query: string): Promise<SearchResult[]>`
+   - Searches across all workspaces the user is a member of
+   - Searches: deployment names, slugs, custom domains
+   - Results grouped by workspace
+   - Returns: workspace name, deployment name, slug, health status, last updated
+6. Create `app/api/v1/search/route.ts`:
+   - GET: `?q=query` — returns search results
+7. Create `components/layout/global-search.tsx`:
+   - Search input in app header (Cmd+K / Ctrl+K shortcut)
+   - Dropdown results grouped by workspace
+   - Shows deployment name, slug, status badge, last updated
+   - Navigate to deployment on selection
+8. Create `tests/integration/analytics/pdf-export.test.ts`
+9. Create `tests/integration/search/global-search.test.ts`
+
+### Gate
+
+- PDF generated with correct analytics data and branding
+- PDF downloadable from analytics page
+- Global search returns results across all user workspaces
+- Search by name, slug, and custom domain all work
+- Results grouped by workspace with status and last updated
+- Cmd+K shortcut opens search
+
+### Files Created
+
+`lib/analytics/pdf-export.ts`, `app/api/v1/deployments/[slug]/analytics/export/route.ts`, `components/analytics/export-pdf-button.tsx`, `lib/search/global-search.ts`, `app/api/v1/search/route.ts`, `components/layout/global-search.tsx`, `tests/integration/analytics/pdf-export.test.ts`, `tests/integration/search/global-search.test.ts`
+
+### Files Modified
+
+`app/(dashboard)/dashboard/layout.tsx` (global search in header)
+
+---
+
+## End of Phase 2 Task Cards
+
+After all Phase 2 sessions are complete, run the full test suite including Phase 2 gates:
+
+```bash
+pnpm typecheck
+pnpm test
+pnpm playwright test
+```
+
+Phase 2 GA gate requires: all tests pass + OWASP ZAP zero high/critical + third-party pentest sign-off + backup restore verification.

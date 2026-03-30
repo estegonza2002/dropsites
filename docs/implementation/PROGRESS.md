@@ -1,8 +1,8 @@
 ---
 title: Implementation Progress
 owner: engineering
-version: "1.0"
-last_updated: 2026-03-29
+version: "2.0"
+last_updated: 2026-03-28
 depends_on:
   - implementation/PLAN.md
   - implementation/TASK_CARDS.md
@@ -120,7 +120,92 @@ depends_on:
 
 ## Phase 2
 
-> Task cards for Phase 2 will be created after Phase 1 is complete.
+### M2.1 — REST API v1
+- [ ] **S45** — REST API v1 + OpenAPI spec, deployment CRUD, auth abstraction, contract tests
+
+### M2.2 — API Key Management
+- [ ] **S46** — API key generation, revocation, dashboard UI, key lifecycle tests
+
+### M2.3 — API Rate Limiting
+- [ ] **S47** — Per-minute/daily/monthly rate limits, burst support, 429 + Retry-After
+
+### M2.4 — Single-File PATCH
+- [ ] **S48** — PATCH endpoint for single file update, version creation, path traversal protection
+
+### M2.5 — Custom Domains
+- [ ] **S49** — CNAME verification, ACME TLS provisioning, DNS instructions UI, serving resolution
+
+### M2.6 — Per-Recipient Access Tokens
+- [ ] **S50** — Named tokens, unique URLs, per-token analytics, revocation, view limits
+
+### M2.7 — Webhooks
+- [ ] **S51** — Webhook registration, HMAC signing, retry logic, delivery log, test endpoint
+
+### M2.8 — Version History
+- [ ] **S52** — Last 3 versions, preview, restore, version metadata
+
+### M2.9 — Namespace Support
+- [ ] **S53** — Team-scoped URL prefixes, namespace validation, serving resolution
+
+### M2.10 — Stripe Integration
+- [ ] **S54** — Stripe Checkout, subscription webhooks, assignProfile on subscribe/cancel
+
+### M2.11 — Billing Flows
+- [ ] **S55** — Upgrade/downgrade/cancel UI, pricing page, feature gates, plan badges
+
+### M2.22 + M2.23 — Annual Billing + Dunning
+- [ ] **S56** — Annual billing toggle, failed payment handling, grace period, recovery
+
+### M2.12 — Licence Keys
+- [ ] **S57** — Licence generation, offline validation, air-gapped mode, admin status panel
+
+### M2.13 — Helm + Terraform
+- [ ] **S58** — Helm chart, Terraform modules for GCP/AWS/Azure, cloud mapping doc
+
+### M2.14 — Backend Flexibility
+- [ ] **S59** — S3/GCS/Azure/MinIO/local storage backends, direct PostgreSQL backend
+
+### M2.15 — Abuse Posture B
+- [ ] **S60** — Safe Browsing + VirusTotal scanning, quarantine queue, weekly re-scan
+
+### M2.16 — Assisted Deployment
+- [ ] **S61** — Deployment runbooks for GCP/AWS/Azure, verification script, checklist
+
+### M2.17 — Workspace API
+- [ ] **S62** — Workspace CRUD API, member invite/role/remove, aggregate analytics endpoint
+
+### M2.18 — Security Validation
+- [ ] **S63** — OWASP ZAP scan, pentest scope, security test suite (T-SEC-01 through T-SEC-18)
+
+### M2.19 — Data Residency
+- [ ] **S64** — EU region option, multi-region storage routing, workspace-level setting
+
+### M2.20 + M2.21 — 2FA + Password Auth
+- [ ] **S65** — TOTP 2FA, backup codes, password auth, strength meter, HaveIBeenPwned check
+
+### M2.24 — Advanced Analytics
+- [ ] **S66** — Geographic + device analytics, comparison mode, shareable analytics link
+
+### M2.25 — CORS Control
+- [ ] **S67** — Per-deployment CORS config, dropsites.json support, wildcard toggle
+
+### M2.26 — Workspace Transfer
+- [ ] **S68** — Workspace transfer, default settings, activity feed, guest access
+
+### M2.27 — Developer Tools
+- [ ] **S69** — JS SDK, CLI tool, GitHub Actions action
+
+### M2.28 — Backup & DR
+- [ ] **S70** — Daily backup, restore script, monthly test, disaster recovery runbook
+
+### M2.29 — SLA & Uptime
+- [ ] **S71** — SLA document, service credits, 90-day uptime history on status page
+
+### M2.30 — Preview Thumbnails
+- [ ] **S72** — Headless browser screenshot, WebP thumbnail, async generation
+
+### M2.31 — PDF Export + Global Search
+- [ ] **S73** — Analytics PDF export, global cross-workspace search (Cmd+K)
 
 ---
 
